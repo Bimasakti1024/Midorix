@@ -1,0 +1,7 @@
+#include "cmd_handle.h"
+
+CMD("helloWorld", "hw", cmd_helloWorld, "Say \"Hello, World.\"")
+
+CMD("help", "h", cmd_help, "Get Help.")
+CMD("exit", "x", cmd_exit, "Exit Midorix.")
+
