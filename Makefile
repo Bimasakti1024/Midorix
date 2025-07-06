@@ -20,13 +20,14 @@ UTIL_OBJ = build/util.o
 INIH_OBJ = build/ini.o
 CHANDL_OBJ = build/chandl.o
 CMDH_OBJ = build/cmd_handle.o
+ALL_OBJ = $(MAIN_BIN) $(MAIN_OBJ) $(UTIL_OBJ) $(INIH_OBJ) $(CHANDL_OBJ) $(CMDH_OBJ)
 
 # Default target
 all: clean $(MAIN_BIN) run
 
 # Clean target
 clean:
-	rm -rf build/*
+	rm -rf $(ALL_OBJ)
 
 # Build target for util.o
 $(UTIL_OBJ): $(UTIL_SRC) $(UTIL_H)
@@ -49,7 +50,7 @@ $(MAIN_OBJ): $(MAIN_SRC)
 	$(CC) -c -o $@ $(MAIN_SRC)
 
 # Link
-$(MAIN_BIN): $(UTIL_OBJ) $(INIH_OBJ) $(CHANDL_OBJ) $(CMDH_OBJ) $(MAIN_OBJ)
+$(MAIN_BIN): $(ALL_OBJ)
 	$(CC) -o $@ build/*
 
 run:
