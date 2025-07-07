@@ -51,6 +51,12 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
+		// feval all value
+		for (int i = 0; i < config.count; i++) {
+			char* value = config.value[i];
+			sfeval(value, value, sizeof(value));
+		}
+
 		cmdh_init_config(&config);	// Load the configuration to the command handler
 
 		printf("[Midorix] Configuration loaded.\n");

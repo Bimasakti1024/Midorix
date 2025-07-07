@@ -13,10 +13,15 @@
 //  Default Configuration
 #define DEFAULT_PROMPT		"[Midorix]> "
 #define DEFAULT_PREFIX		"."
-#define DEFAULT_EDITOR		"vim"
-#define DEFAULT_EXECUTOR	"gcc"
-#define DEFAULT_DEBUGGER	"gdb"
 #define DEFAULT_WELCOME_MSG	"Welcome to Midorix!\n"
+
+#define DEFAULT_EXECUTOR	"gcc"
+#define DEFAULT_EXECUTOR_FORMAT	"%s -o %s %s"
+#define DEFAULT_EXECUTOR_ARG	"-O2 -g"
+
+#define DEFAULT_EDITOR		"vim"
+#define DEFAULT_EDITOR_FORMAT	"%s %s %s"
+#define DEFAULT_EDITOR_ARG	""
 
 typedef struct {
 	char key[MAX_ENTRY][MAX_KEY];
@@ -33,9 +38,8 @@ int readini(const char* inifn, Dictionary* dict); // Parse ini configuration fil
 int chkfexist(const char* filename); // Check file existence
 
 // String Manipulations
-void rmquote(const char* src, char* dest, size_t maxlen);
-void unescape(const char* input, char* output, size_t maxlen);
 void feval(const char* input, char* output, size_t maxlen);
+void sfeval(const char* input, char* output, size_t maxlen);
 void ssplit(const char* input, wordexp_t* dest);
 
 void flush_stdin(); // Flush stdin

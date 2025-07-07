@@ -8,7 +8,9 @@ void cmdh_init_config(Dictionary* cfgin);
 void cmd_helloWorld(int argc, char** argv);
 
 void cmd_help(int argc, char** argv);
-void cmd_exit(int argc, char** argv);
+void cmd_quit(int argc, char** argv);
+
+void cmd_edit(int argc, char** argv);
 
 #endif
 

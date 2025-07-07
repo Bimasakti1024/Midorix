@@ -3,5 +3,7 @@
 CMD("helloWorld", "hw", cmd_helloWorld, "Say \"Hello, World.\"")
 
 CMD("help", "h", cmd_help, "Get Help.")
-CMD("exit", "x", cmd_exit, "Exit Midorix.")
+CMD("quit", "q", cmd_quit, "Quit Midorix.")
+
+CMD("edit", "e", cmd_edit, "Edit File.")
 

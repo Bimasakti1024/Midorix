@@ -64,47 +64,50 @@ int chkfexist(const char* filename) {
 	return access(filename, F_OK);
 }
 
-void rmquote(const char* src, char* dest, size_t maxlen) {
-	size_t len = strlen(src);
-
-	if ((src[0] == '"' && src[len - 1] == '"') || (src[0] == '\'' && src[len - 1] == '\'')) {
-		size_t clen = len - 2;
-		if (clen >= len) clen = maxlen - 1;
-
-		strncpy(dest, src + 1, clen);
-		dest[clen] = '\0';
-	} else {
-		strncpy(dest, src, maxlen - 1);
-		dest[maxlen - 1] = '\0';
-	}
-}
-
-void unescape(const char* input, char* output, size_t maxlen) {
-	size_t i = 0, j = 0;
-
-	while (input[i] != '\0' && j < maxlen - 1) {
-		if (input[i] == '\\') {
-			i++;
-			switch (input[i]) {
-				case 'n': output[j++] = '\n'; break;
-				case 't': output[j++] = '\t'; break;
-				case 'r': output[j++] = '\r'; break;
-				case '"': output[j++] = '"'; break;
-				case '\'': output[j++] = '\''; break;
-				case '\\': output[j++] = '\\'; break;
-				case '0': output[j++] = '\0'; break;
-			}
-		} else {
-			output[j++] = input[i];
-		}
-		i++;
-	}
-	output[j] = '\0';
-}
-
 void feval(const char* input, char* output, size_t maxlen) {
-	rmquote(input, output, maxlen);
-	unescape(output, output, maxlen);
+    size_t i = 0, j = 0;
+    size_t len = strlen(input);
+
+    // Cek apakah string cukup panjang untuk ada quote
+    if (len >= 2 &&
+        ((input[0] == '"' && input[len - 1] == '"') ||
+         (input[0] == '\'' && input[len - 1] == '\''))) {
+        // Hilangkan quote awal dan akhir
+        i = 1;
+        len -= 1;
+    }
+
+    while (i < len && j < maxlen - 1) {
+        if (input[i] == '\\') {
+            i++;
+            if (i >= len) break;
+            switch (input[i]) {
+                case 'n': output[j++] = '\n'; break;
+                case 't': output[j++] = '\t'; break;
+                case 'r': output[j++] = '\r'; break;
+                case '"': output[j++] = '"'; break;
+                case '\'': output[j++] = '\''; break;
+                case '\\': output[j++] = '\\'; break;
+                case '0': output[j++] = '\0'; break;
+                default:
+                    output[j++] = input[i]; break;
+            }
+        } else {
+            output[j++] = input[i];
+        }
+        i++;
+    }
+
+    output[j] = '\0';
+}
+
+void sfeval(const char* input, char* output, size_t maxlen) {
+	char buffer[maxlen];
+	strncpy(buffer, input, maxlen);
+	buffer[maxlen - 1] = '\0';
+
+	feval(buffer, buffer, maxlen);
+	output = buffer;
 }
 
 void ssplit(const char* input, wordexp_t* dest) {
