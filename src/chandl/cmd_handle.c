@@ -7,35 +7,69 @@
 
 static Dictionary config;
 
-void cmdh_init_config(Dictionary* cfgin) {
-	memcpy(&config, cfgin, sizeof(Dictionary));
+void cmdh_init_config(Dictionary* cfgout, const char* configfn) {
+	if (chkfexist(configfn) != 0) {
+		fprintf(stderr, "Configuration does not exist.\n");
+		exit(1);
+	}
+
+	printf("[Midorix] Loading configuration file: %s\n", configfn);
+	printf("[Midorix] Parsing configuration.\n");
+
+	if (readini(configfn, &config) == 1) {
+		exit(1);
+	}
+
+	for (int i = 0; i < config.count; i++) {
+		char* value = config.value[i];
+		sfeval(value, value, MAX_VALUE);
+	}
+
+	memcpy(cfgout, &config, sizeof(Dictionary));
+	printf("[Midorix] Loaded configuration.\n");
 }
 
 void cmdh_run(int argc, char** argv, const char* key) {
-    if (argc < 2) {
-        printf("Expected at least 2 arguments.\n");
-        return;
-    }
+	if (argc < 2) {
+		printf("Expected at least 2 arguments.\n");
+		return;
+	}
 
-    const char* command = dict_get(&config, key);
-    printf("%s\n", command);
-    if (!command) {
-        fprintf(stderr, "%s not configured.\n", key);
-        return;
-    }
+	const char* command = dict_get(&config, key);
+	if (!command) {
+		fprintf(stderr, "%s not configured.\n", key);
+		return;
+	}
 
-    char** fcommand = malloc(sizeof(char*) * (argc + 1));
-    if (!command) {
-        perror("malloc");
-        return;
-    }
+	char argk[MAX_KEY];
+	snprintf(argk, sizeof(argk), "%s_arg", key);
 
-    fcommand[0] = (char*) command;
-    memmove(&fcommand[1], &argv[1], sizeof(char*) * (argc - 1));
-    fcommand[argc] = NULL;
+	const char* argstr = dict_get(&config, argk);
 
-    execcmd(fcommand);
-    free(fcommand);
+	wordexp_t w = {0};
+	if (argstr) ssplit(argstr, &w);
+
+	// Count arguments:
+	// command + arg_from_config + arg_from_user + NULL
+	int total = 1 + w.we_wordc + (argc - 1);
+	char** fcommand = malloc(sizeof(char*) * (total + 1));
+	if (!fcommand) {
+		perror("malloc");
+		wordfree(&w);
+		return;
+	}
+
+	int i = 0;
+	fcommand[i++] = (char*)command;
+
+	for (int j = 0; j < w.we_wordc; j++) fcommand[i++] = w.we_wordv[j];
+
+	for (int j = 1; j < argc; j++) fcommand[i++] = argv[j];
+
+	fcommand[i] = NULL; // NULL-terminate
+
+	execcmd(fcommand);
+	free(fcommand);
 }
 
 void cmd_helloWorld(int argc, char** argv) {
@@ -67,3 +101,8 @@ void cmd_quit(int argc, char** argv) {
 void cmd_edit(int argc, char** argv) {
 	cmdh_run(argc, argv, "editor");
 }
+
+void cmd_exec(int argc, char** argv) {
+	cmdh_run(argc, argv, "executor");
+}
+

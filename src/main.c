@@ -38,42 +38,21 @@ int main(int argc, char* argv[]) {
 	// Initialize dictionary
 	Dictionary config = {0};
 
-	// Check configuration file existence
-	if (chkfexist(configfn) == -1) {
-		fprintf(stderr, "Warning: configuration file does not exist, using default configuration.\n");
-	} else {
-		printf("[Midorix] Found configuration file: %s\n", configfn);
-		printf("[Midorix] Loading Configuration...\n");
-
-		// Read the configuration file
-		if (readini(configfn, &config) == 1) {
-			fprintf(stderr, "Error: Failed to read configuration file.\n");
-			return 1;
-		}
-
-		// feval all value
-		for (int i = 0; i < config.count; i++) {
-			char* value = config.value[i];
-			sfeval(value, value, sizeof(value));
-		}
-
-		cmdh_init_config(&config);	// Load the configuration to the command handler
-
-		printf("[Midorix] Configuration loaded.\n");
-	}
+	// Initialize Configuration
+	cmdh_init_config(&config, configfn);
 
 	// Set welcome message
 	char welcome_msg[MAX_VALUE];
-	feval(DEFAULT(dict_get(&config, "welcome_msg"), DEFAULT_WELCOME_MSG), welcome_msg, sizeof(welcome_msg));
+	sfeval(DEFAULT(dict_get(&config, "welcome_msg"), DEFAULT_WELCOME_MSG), welcome_msg, sizeof(welcome_msg));
 	printf("%s", welcome_msg);
 
 	// Set prompt
 	char prompt[MAX_VALUE];
-	feval(DEFAULT(dict_get(&config, "prompt"), DEFAULT_PROMPT), prompt, sizeof(prompt));
+	sfeval(DEFAULT(dict_get(&config, "prompt"), DEFAULT_PROMPT), prompt, sizeof(prompt));
 
 	// Set prefix
 	char prefix[MAX_VALUE];
-	feval(DEFAULT(dict_get(&config, "prefix"), DEFAULT_PREFIX), prefix, sizeof(prefix));
+	sfeval(DEFAULT(dict_get(&config, "prefix"), DEFAULT_PREFIX), prefix, sizeof(prefix));
 
 	// Main loop
 	while (1) {

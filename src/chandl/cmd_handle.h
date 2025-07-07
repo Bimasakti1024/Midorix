@@ -3,7 +3,7 @@
 
 #include "../util/util.h"
 
-void cmdh_init_config(Dictionary* cfgin);
+void cmdh_init_config(Dictionary* cfgout, const char* configfn);
 
 void cmd_helloWorld(int argc, char** argv);
 
@@ -11,6 +11,7 @@ void cmd_help(int argc, char** argv);
 void cmd_quit(int argc, char** argv);
 
 void cmd_edit(int argc, char** argv);
+void cmd_exec(int argc, char** argv);
 
 #endif
 

@@ -68,11 +68,11 @@ void feval(const char* input, char* output, size_t maxlen) {
     size_t i = 0, j = 0;
     size_t len = strlen(input);
 
-    // Cek apakah string cukup panjang untuk ada quote
+    // Check string lenght
     if (len >= 2 &&
         ((input[0] == '"' && input[len - 1] == '"') ||
          (input[0] == '\'' && input[len - 1] == '\''))) {
-        // Hilangkan quote awal dan akhir
+        // Remove first and last quote
         i = 1;
         len -= 1;
     }
@@ -106,8 +106,7 @@ void sfeval(const char* input, char* output, size_t maxlen) {
 	strncpy(buffer, input, maxlen);
 	buffer[maxlen - 1] = '\0';
 
-	feval(buffer, buffer, maxlen);
-	output = buffer;
+	feval(buffer, output, maxlen);
 }
 
 void ssplit(const char* input, wordexp_t* dest) {

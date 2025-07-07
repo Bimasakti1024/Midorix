@@ -16,11 +16,9 @@
 #define DEFAULT_WELCOME_MSG	"Welcome to Midorix!\n"
 
 #define DEFAULT_EXECUTOR	"gcc"
-#define DEFAULT_EXECUTOR_FORMAT	"%s -o %s %s"
 #define DEFAULT_EXECUTOR_ARG	"-O2 -g"
 
 #define DEFAULT_EDITOR		"vim"
-#define DEFAULT_EDITOR_FORMAT	"%s %s %s"
 #define DEFAULT_EDITOR_ARG	""
 
 typedef struct {
