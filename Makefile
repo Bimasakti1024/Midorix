@@ -23,11 +23,14 @@ CMDH_OBJ = build/cmd_handle.o
 ALL_OBJ = $(MAIN_BIN) $(MAIN_OBJ) $(UTIL_OBJ) $(INIH_OBJ) $(CHANDL_OBJ) $(CMDH_OBJ)
 
 # Default target
-all: clean $(MAIN_BIN) run
+all: clean build run
 
 # Clean target
 clean:
 	rm -rf $(ALL_OBJ)
+
+# Build target
+build: $(ALL_OBJ)
 
 # Build target for util.o
 $(UTIL_OBJ): $(UTIL_SRC) $(UTIL_H)

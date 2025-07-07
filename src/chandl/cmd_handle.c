@@ -85,6 +85,12 @@ void cmd_help(int argc, char** argv) {
 	}
 }
 
+void cmd_scfg(int argc, char** argv) {
+	for (int i = 0; i < config.count; i++) {
+		printf("%s: %s\n", config.key[i], config.value[i]);
+	}
+}
+
 void cmd_quit(int argc, char** argv) {
 	printf("Goodbye.\n");
 
@@ -104,5 +110,13 @@ void cmd_edit(int argc, char** argv) {
 
 void cmd_exec(int argc, char** argv) {
 	cmdh_run(argc, argv, "executor");
+}
+
+void cmd_debug(int argc, char** argv) {
+	cmdh_run(argc, argv, "debugger");
+}
+
+void cmd_test(int argc, char** argv) {
+	cmdh_run(argc, argv, "tester");
 }
 

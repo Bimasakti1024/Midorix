@@ -21,6 +21,9 @@
 #define DEFAULT_EDITOR		"vim"
 #define DEFAULT_EDITOR_ARG	""
 
+#define DEFAULT_TESTER		"valgrind"
+#define DEFAULT_TESTER_ARG	"--leak-check=full"
+
 typedef struct {
 	char key[MAX_ENTRY][MAX_KEY];
 	char value[MAX_ENTRY][MAX_VALUE];
