@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
 	// Set prefix
 	char prefix[MAX_VALUE];
 	sfeval(DEFAULT(dict_get(&config, "prefix"), DEFAULT_PREFIX), prefix, sizeof(prefix));
+	size_t prefixlen = strlen(prefix);
 
 	// Main loop
 	while (1) {
@@ -68,7 +69,12 @@ int main(int argc, char* argv[]) {
 
 		if (strlen(command) == 0) {				 	// Handle Empty
 			continue;
-		} else if (strncmp(command, prefix, strlen(prefix)) == 0) {	// Check for prefix
+		} else if (strlen(command) > prefixlen) {			// Check for prefix lenght
+			// Check for prefix
+			if (strncmp(command, prefix, prefixlen) != 0) {
+				continue;
+			}
+
 			// Execute Midorix Command
 			memmove(command, command + 1, strlen(command)); 	// Move to the left(remove the dot)
 
@@ -77,7 +83,7 @@ int main(int argc, char* argv[]) {
 
 			int cmdFound = 0;					// Flag
 			// Find the command
-			for (int i = 0; command_table[i].cmd != NULL; i++) {
+			for (int i = 0; command_table[i].cmd != NULL && !cmdFound; i++) {
 				if ((strcmp(command_table[i].cmd, arg.we_wordv[0]) == 0) || (strcmp(command_table[i].shortcut, arg.we_wordv[0]) == 0)) {
 					cmdFound = 1;
 					command_table[i].handler(arg.we_wordc, arg.we_wordv);

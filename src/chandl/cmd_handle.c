@@ -30,11 +30,6 @@ void cmdh_init_config(Dictionary* cfgout, const char* configfn) {
 }
 
 void cmdh_run(int argc, char** argv, const char* key) {
-	if (argc < 2) {
-		printf("Expected at least 2 arguments.\n");
-		return;
-	}
-
 	const char* command = dict_get(&config, key);
 	if (!command) {
 		fprintf(stderr, "%s not configured.\n", key);
@@ -116,7 +111,7 @@ void cmd_debug(int argc, char** argv) {
 	cmdh_run(argc, argv, "debugger");
 }
 
-void cmd_test(int argc, char** argv) {
-	cmdh_run(argc, argv, "tester");
+void cmd_mema(int argc, char** argv) {
+	cmdh_run(argc, argv, "memanalyzer");
 }
 

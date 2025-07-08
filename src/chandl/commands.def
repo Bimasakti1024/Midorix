@@ -9,5 +9,5 @@ CMD("quit", "q", cmd_quit, "Quit Midorix.")
 CMD("edit", "e", cmd_edit, "Edit File.")
 CMD("exec", "x", cmd_exec, "Execute(compile/interpret).")
 CMD("debug", "d", cmd_debug, "Debug.")
-CMD("test", "t", cmd_test, "Test.")
+CMD("memanalyze", "mema", cmd_mema, "Analyze Memory.")
 

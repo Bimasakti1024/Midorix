@@ -14,7 +14,7 @@ void cmd_quit(int argc, char** argv);
 void cmd_edit(int argc, char** argv);
 void cmd_exec(int argc, char** argv);
 void cmd_debug(int argc, char** argv);
-void cmd_test(int argc, char** argv);
+void cmd_mema(int argc, char** argv);
 
 #endif
 

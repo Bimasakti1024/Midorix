@@ -126,6 +126,12 @@ void flush_stdin() {
 }
 
 void execcmd(char* argv[]) {
+	printf("executing: ");
+	for (int i = 0; argv[i] != NULL; i++) {
+		printf("%s", argv[i]);
+		if (argv[i + 1] != NULL) printf(" "); else printf("\n");
+	}
+
 	pid_t pid = fork();
 
 	if (pid == 0) {
