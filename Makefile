@@ -54,7 +54,7 @@ $(MAIN_OBJ): $(MAIN_SRC)
 
 # Link
 $(MAIN_BIN): $(ALL_OBJ)
-	$(CC) -o $@ build/*
+	$(CC) -o $@ build/* -lreadline
 
 run:
 	./$(MAIN_BIN)

@@ -1,32 +1,41 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+
+#include <string.h>
 #include <limits.h>
 #include <signal.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "util/util.h"
 #include "chandl/chandl.h"
 #include "chandl/cmd_handle.h"
 
 #define DEFAULT(value, fallback) ((value) ? (value) : (fallback))
 
-// Signal Handler
+// Global
+char prefix[MAX_VALUE], prompt[MAX_VALUE];
+size_t prefixlen;
+
+// Signal handler
 void sighandler(int sig) {
-	fprintf(stdout, "Received signal: %d\n", sig);
+	fprintf(stdout, "\n[Midorix] Received signal: %d\n", sig);
 }
 
-// Main function
+// Execute function
+void execute(char* command);
+
+// Main
 int main(int argc, char* argv[]) {
-	// Setup signal handler
+	// Signal handler
 	signal(SIGINT, sighandler);
 
-	// Load Configuration
-	char* home = getenv("HOME");
-	if (home == NULL) {
-		fprintf(stderr, "Error: HOME environment variable not set.\n");
+	// Config path
+	const char* home = getenv("HOME");
+	if (!home) {
+		fprintf(stderr, "[Midorix] Error: HOME environment variable not set.\n");
 		return 1;
 	}
 
@@ -35,78 +44,79 @@ int main(int argc, char* argv[]) {
 	char configfn[PATH_MAX];
 	snprintf(configfn, sizeof(configfn), "%s/.midorixc", home);
 
-	// Initialize dictionary
+	// Init dictionary
 	Dictionary config = {0};
-
-	// Initialize Configuration
 	cmdh_init_config(&config, configfn);
 
-	// Set welcome message
+	// Welcome
 	char welcome_msg[MAX_VALUE];
 	sfeval(DEFAULT(dict_get(&config, "welcome_msg"), DEFAULT_WELCOME_MSG), welcome_msg, sizeof(welcome_msg));
 	printf("%s", welcome_msg);
 
-	// Set prompt
-	char prompt[MAX_VALUE];
+	// Prompt
 	sfeval(DEFAULT(dict_get(&config, "prompt"), DEFAULT_PROMPT), prompt, sizeof(prompt));
 
-	// Set prefix
-	char prefix[MAX_VALUE];
+	// Prefix
 	sfeval(DEFAULT(dict_get(&config, "prefix"), DEFAULT_PREFIX), prefix, sizeof(prefix));
-	size_t prefixlen = strlen(prefix);
+	prefixlen = strlen(prefix);
 
 	// Main loop
+	char command[4096];
 	while (1) {
-		char command[4096 + 1];
-		printf("%s", prompt);
-		if (fgets(command, sizeof(command), stdin) == NULL) {
-			fprintf(stderr, "Error: Input error.\n");
-			return -1;
+		char* input = readline(prompt);
+		if (!input) {
+			fprintf(stderr, "[Midorix] Error: Input error.\n");
+			break;
 		}
 
-		if (strchr(command, '\n') == NULL) { flush_stdin(); }	 	// Handle Buffer Overflow
-		command[strcspn(command, "\n")] = '\0';		 	 	// Null Terminate
-
-		if (strlen(command) == 0) {				 	// Handle Empty
-			continue;
-		} else if (strlen(command) > prefixlen) {			// Check for prefix lenght
-			// Check for prefix
-			if (strncmp(command, prefix, prefixlen) != 0) {
-				continue;
-			}
-
-			// Execute Midorix Command
-			memmove(command, command + 1, strlen(command)); 	// Move to the left(remove the dot)
-
-			wordexp_t arg;						// Setup Argument
-			ssplit(command, &arg);					// Split
-
-			int cmdFound = 0;					// Flag
-			// Find the command
-			for (int i = 0; command_table[i].cmd != NULL && !cmdFound; i++) {
-				if ((strcmp(command_table[i].cmd, arg.we_wordv[0]) == 0) || (strcmp(command_table[i].shortcut, arg.we_wordv[0]) == 0)) {
-					cmdFound = 1;
-					command_table[i].handler(arg.we_wordc, arg.we_wordv);
-					break;
-				}
-			}
-			if (cmdFound) {
-				continue;
-			} else {
-				printf("Unknown Midorix Command: %s\n", arg.we_wordv[0]);
-			}
-		} else {
-			printf("Fallback to system call.\n");
-			wordexp_t arg;
-			ssplit(command, &arg);
-
-			if (arg.we_wordv == NULL) {			  	  // Error Handler
-				fprintf(stderr, "wordexp failed.\n");
-			}
-			execcmd(arg.we_wordv);					  // Execute
+		if (strlen(input) > 0) {
+			add_history(input);
+			strncpy(command, input, sizeof(command) - 1);
+			command[sizeof(command) - 1] = '\0';
+			execute(command);
 		}
+		free(input);
 	}
 
 	return 0;
+}
+
+// Execute command
+void execute(char* command) {
+	if (command == NULL || strlen(command) == 0) return;
+
+	if (strlen(command) > prefixlen && strncmp(command, prefix, prefixlen) == 0) {
+		// Midorix command
+		memmove(command, command + prefixlen, strlen(command) - prefixlen + 1);
+
+		wordexp_t arg;
+		ssplit(command, &arg);
+
+		int found = 0;
+		for (int i = 0; command_table[i].cmd != NULL; i++) {
+			if (strcmp(command_table[i].cmd, arg.we_wordv[0]) == 0 ||
+				strcmp(command_table[i].shortcut, arg.we_wordv[0]) == 0) {
+				found = 1;
+				command_table[i].handler(arg.we_wordc, arg.we_wordv);
+				break;
+			}
+		}
+
+		if (!found)
+			printf("[Midorix] Unknown command: %s\n", arg.we_wordv[0]);
+
+	} else {
+		// System fallback
+		wordexp_t arg;
+		ssplit(command, &arg);
+
+		if (!arg.we_wordv) {
+			fprintf(stderr, "[Midorix] wordexp failed.\n");
+			return;
+		}
+
+		printf("[Midorix] Executing system command: %s\n", command);
+		execcmd(arg.we_wordv);
+	}
 }
 

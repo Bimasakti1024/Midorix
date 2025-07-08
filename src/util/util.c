@@ -110,8 +110,6 @@ void sfeval(const char* input, char* output, size_t maxlen) {
 }
 
 void ssplit(const char* input, wordexp_t* dest) {
-	wordfree(dest);
-
 	int ret = wordexp(input, dest, 0);
 	if (ret != 0) {
 		dest->we_wordc = 0;
