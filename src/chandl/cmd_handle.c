@@ -1,7 +1,7 @@
 #include "cmd_handle.h"
 #include "chandl.h"
 #include "../util/util.h"
-#include "../cJSON/cJSON.h"
+#include "../ext/cJSON/cJSON.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

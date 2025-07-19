@@ -10,7 +10,7 @@
 #include <readline/history.h>
 
 #include "util/util.h"
-#include "cJSON/cJSON.h"
+#include "ext/cJSON/cJSON.h"
 #include "chandl/chandl.h"
 #include "chandl/cmd_handle.h"
 

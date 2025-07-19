@@ -4,7 +4,7 @@ CFLAGS = -O2 -g -Wall
 # Source files
 MAIN_SRC = src/main.c
 UTIL_SRC = src/util/util.c
-CJSON_SRC = src/cJSON/cJSON.c
+CJSON_SRC = src/ext/cJSON/cJSON.c
 CHANDL_SRC = src/chandl/chandl.c
 CMDH_SRC = src/chandl/cmd_handle.c
 

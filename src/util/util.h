@@ -4,7 +4,7 @@
 #define _GNU_SOURCE
 #include <stddef.h>
 #include <wordexp.h>
-#include "../cJSON/cJSON.h"
+#include "../ext/cJSON/cJSON.h"
 
 // Macros
 //  Dictionary
