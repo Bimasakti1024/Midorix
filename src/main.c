@@ -10,6 +10,7 @@
 #include <readline/history.h>
 
 #include "util/util.h"
+#include "cJSON/cJSON.h"
 #include "chandl/chandl.h"
 #include "chandl/cmd_handle.h"
 
@@ -18,6 +19,7 @@
 // Global
 char prefix[MAX_VALUE], prompt[MAX_VALUE];
 size_t prefixlen;
+static cJSON* config = NULL;
 
 // Signal handler
 void sighandler(int sig) {
@@ -27,8 +29,17 @@ void sighandler(int sig) {
 // Execute function
 void execute(char* command);
 
+void cleanup() {
+	if (config) {
+		cJSON_Delete(config);
+		config = NULL;
+	}
+}
+
 // Main
 int main(int argc, char* argv[]) {
+	atexit(cleanup);
+
 	// Signal handler
 	signal(SIGINT, sighandler);
 
@@ -42,22 +53,23 @@ int main(int argc, char* argv[]) {
 	printf("[Midorix] Found home path: %s\n", home);
 
 	char configfn[PATH_MAX];
-	snprintf(configfn, sizeof(configfn), "%s/.midorixc", home);
+	snprintf(configfn, sizeof(configfn), "%s/.midorixc.json", home);
 
-	// Init dictionary
-	Dictionary config = {0};
+	// Init configuration
 	cmdh_init_config(&config, configfn);
 
 	// Welcome
 	char welcome_msg[MAX_VALUE];
-	sfeval(DEFAULT(dict_get(&config, "welcome_msg"), DEFAULT_WELCOME_MSG), welcome_msg, sizeof(welcome_msg));
+	strncpy(welcome_msg, cJSON_GetObjectItem(config, "welcome_msg")->valuestring, MAX_VALUE);
 	printf("%s", welcome_msg);
 
 	// Prompt
-	sfeval(DEFAULT(dict_get(&config, "prompt"), DEFAULT_PROMPT), prompt, sizeof(prompt));
+	prompt[MAX_VALUE];
+	strncpy(prompt, cJSON_GetObjectItem(config, "prompt")->valuestring, MAX_VALUE);
 
 	// Prefix
-	sfeval(DEFAULT(dict_get(&config, "prefix"), DEFAULT_PREFIX), prefix, sizeof(prefix));
+	prefix[MAX_VALUE];
+	strncpy(prefix, cJSON_GetObjectItem(config, "prefix")->valuestring, MAX_VALUE);
 	prefixlen = strlen(prefix);
 
 	// Main loop
@@ -85,12 +97,23 @@ int main(int argc, char* argv[]) {
 void execute(char* command) {
 	if (command == NULL || strlen(command) == 0) return;
 
-	if (strlen(command) > prefixlen && strncmp(command, prefix, prefixlen) == 0) {
+	if (strlen(command) > prefixlen && strncmp(command, prefix, prefixlen) == 0
+		&& command[prefixlen] != '\0') {
 		// Midorix command
-		memmove(command, command + prefixlen, strlen(command) - prefixlen + 1);
+		char* pure_command = strdup(command + prefixlen);
+		if (!pure_command) {
+			perror("strdup");
+			return;
+		}
 
 		wordexp_t arg;
-		ssplit(command, &arg);
+		if (ssplit(pure_command, &arg) != 0) {
+			free(pure_command);
+			perror("wordexp");
+			return;
+		}
+		free(pure_command);
+		printf("[Midorix] Executing midorix command: %s.\n", arg.we_wordv[0]);
 
 		int found = 0;
 		for (int i = 0; command_table[i].cmd != NULL; i++) {
@@ -102,13 +125,15 @@ void execute(char* command) {
 			}
 		}
 
-		if (!found)
-			printf("[Midorix] Unknown command: %s\n", arg.we_wordv[0]);
-
+		if (!found) printf("[Midorix] Unknown command: %s\n", arg.we_wordv[0]);
+		wordfree(&arg);
 	} else {
 		// System fallback
 		wordexp_t arg;
-		ssplit(command, &arg);
+		if (ssplit(command, &arg) != 0) {
+			perror("wordexp");
+			return;
+		}
 
 		if (!arg.we_wordv) {
 			fprintf(stderr, "[Midorix] wordexp failed.\n");
@@ -117,6 +142,7 @@ void execute(char* command) {
 
 		printf("[Midorix] Executing system command: %s\n", command);
 		execcmd(arg.we_wordv);
+		wordfree(&arg);
 	}
 }
 

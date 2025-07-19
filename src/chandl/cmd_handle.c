@@ -1,13 +1,14 @@
 #include "cmd_handle.h"
 #include "chandl.h"
 #include "../util/util.h"
+#include "../cJSON/cJSON.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-static Dictionary config;
+static cJSON* lconfig = NULL;
 
-void cmdh_init_config(Dictionary* cfgout, const char* configfn) {
+void cmdh_init_config(cJSON** cfgout, const char* configfn) {
 	if (chkfexist(configfn) != 0) {
 		fprintf(stderr, "Configuration does not exist.\n");
 		exit(1);
@@ -16,56 +17,64 @@ void cmdh_init_config(Dictionary* cfgout, const char* configfn) {
 	printf("[Midorix] Loading configuration file: %s\n", configfn);
 	printf("[Midorix] Parsing configuration.\n");
 
-	if (readini(configfn, &config) == 1) {
+	if (readjson(configfn, &lconfig) == 1) {
 		exit(1);
 	}
 
-	for (int i = 0; i < config.count; i++) {
-		char* value = config.value[i];
-		sfeval(value, value, MAX_VALUE);
-	}
-
-	memcpy(cfgout, &config, sizeof(Dictionary));
+	*cfgout = lconfig;
 	printf("[Midorix] Loaded configuration.\n");
 }
 
 void cmdh_run(int argc, char** argv, const char* key) {
-	const char* command = dict_get(&config, key);
-	if (!command) {
+	const char* val = cJSON_GetObjectItem(lconfig, key)->valuestring;
+	if (!val) {
 		fprintf(stderr, "%s not configured.\n", key);
 		return;
 	}
 
-	char argk[MAX_KEY];
+	char* command = strdup(val); // allocate copy
+	if (!command) {
+		perror("strdup");
+		return;
+	}
+
+	char argk[MAX_VALUE];
 	snprintf(argk, sizeof(argk), "%s_arg", key);
 
-	const char* argstr = dict_get(&config, argk);
+	const char* aval = cJSON_GetObjectItem(lconfig, argk)->valuestring;
+	char* argstr = NULL;
+	if (aval) argstr = strdup(aval);
 
 	wordexp_t w = {0};
-	if (argstr) ssplit(argstr, &w);
+	if (argstr) {
+		if (ssplit(argstr, &w) != 0) {
+			perror("wordexp");
+			return;
+		}
+	}
 
-	// Count arguments:
-	// command + arg_from_config + arg_from_user + NULL
+	// Build argument list
 	int total = 1 + w.we_wordc + (argc - 1);
 	char** fcommand = malloc(sizeof(char*) * (total + 1));
 	if (!fcommand) {
 		perror("malloc");
 		wordfree(&w);
+		free(command);
+		free(argstr);
 		return;
 	}
 
 	int i = 0;
-	fcommand[i++] = (char*)command;
-
+	fcommand[i++] = command;
 	for (int j = 0; j < w.we_wordc; j++) fcommand[i++] = w.we_wordv[j];
-
 	for (int j = 1; j < argc; j++) fcommand[i++] = argv[j];
+	fcommand[i] = NULL;
 
-	fcommand[i] = NULL; // NULL-terminate
-
-	execcmd(fcommand);
-	free(fcommand);
+	execcmd(fcommand); // will use fcommand[0] = command
+	free(command);
+	if (argstr) free(argstr);
 }
+
 
 void cmd_helloWorld(int argc, char** argv) {
 	printf("Hello, World!\n");
@@ -81,9 +90,7 @@ void cmd_help(int argc, char** argv) {
 }
 
 void cmd_scfg(int argc, char** argv) {
-	for (int i = 0; i < config.count; i++) {
-		printf("%s: %s\n", config.key[i], config.value[i]);
-	}
+	printf("%s\n", cJSON_Print(lconfig));
 }
 
 void cmd_quit(int argc, char** argv) {

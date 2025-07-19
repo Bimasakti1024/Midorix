@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 #include <stddef.h>
 #include <wordexp.h>
+#include "../cJSON/cJSON.h"
 
 // Macros
 //  Dictionary
@@ -25,14 +26,14 @@ typedef struct {
 void dict_set(Dictionary* dict, const char* key, const char* value);
 const char* dict_get(Dictionary* dict, const char* key);
 
-int readini(const char* inifn, Dictionary* dict); // Parse ini configuration file
+int readjson(const char* jsonf, cJSON** jsonout); // Parse JSON configuration file
 
 int chkfexist(const char* filename); // Check file existence
 
 // String Manipulations
 void feval(const char* input, char* output, size_t maxlen);
 void sfeval(const char* input, char* output, size_t maxlen);
-void ssplit(const char* input, wordexp_t* dest);
+int ssplit(const char* input, wordexp_t* dest);
 
 void flush_stdin(); // Flush stdin
 

@@ -2,8 +2,9 @@
 #define CMD_HANDLER_H
 
 #include "../util/util.h"
+#include "../cJSON/cJSON.h"
 
-void cmdh_init_config(Dictionary* cfgout, const char* configfn);
+void cmdh_init_config(cJSON** cfgout, const char* configfn);
 
 void cmd_helloWorld(int argc, char** argv);
 
