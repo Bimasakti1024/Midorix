@@ -26,7 +26,7 @@ void cmdh_init_config(cJSON** cfgout, const char* configfn) {
 }
 
 void cmdh_run(int argc, char** argv, const char* key) {
-	const char* val = cJSON_GetObjectItem(lconfig, key)->valuestring;
+	char* val = cJSON_GetObjectItem(lconfig, key)->valuestring;
 	if (!val) {
 		fprintf(stderr, "%s not configured.\n", key);
 		return;
@@ -46,16 +46,22 @@ void cmdh_run(int argc, char** argv, const char* key) {
 	}
 	snprintf(argk, len + 1, "%s_arg", key);
 
-	const char* aval = cJSON_GetObjectItem(lconfig, argk)->valuestring;
+	cJSON* aval = cJSON_GetObjectItem(lconfig, argk);
 	char* argstr = NULL;
-	if (aval) argstr = strdup(aval);
+	if (aval) {
+		argstr = strdup(aval->valuestring);
+		if (!argstr) {
+			perror("strdup");
+			goto cleanup;
+			return;
+		}
+	}
 
 	wordexp_t w = {0};
 	if (argstr) {
 		if (ssplit(argstr, &w) != 0) {
 			perror("wordexp");
-			free(argk);
-			free(argstr);
+			goto cleanup;
 			return;
 		}
 	}
@@ -65,10 +71,7 @@ void cmdh_run(int argc, char** argv, const char* key) {
 	char** fcommand = malloc(sizeof(char*) * (total + 1));
 	if (!fcommand) {
 		perror("malloc");
-		wordfree(&w);
-		free(command);
-		free(argstr);
-		free(argk);
+		goto cleanup;
 		return;
 	}
 
@@ -79,9 +82,12 @@ void cmdh_run(int argc, char** argv, const char* key) {
 	fcommand[i] = NULL;
 
 	execcmd(fcommand); // will use fcommand[0] = command
-	free(command);
-	free(argk);
-	if (argstr) free(argstr);
+	cleanup:
+		if (fcommand) free(fcommand);
+		free(command);
+		free(argk);
+		if (argstr) free(argstr);
+		wordfree(&w);
 }
 
 
