@@ -7,24 +7,10 @@
 #include "../ext/cJSON/cJSON.h"
 
 // Macros
-//  Dictionary
-#define MAX_ENTRY 100	// Maximum number of key-value pairs
-#define MAX_KEY 128	// Maximum length for keys
-#define MAX_VALUE 256	// Maximum length for values
 //  Default Configuration
 #define DEFAULT_PROMPT		"[Midorix]> "
 #define DEFAULT_PREFIX		"."
 #define DEFAULT_WELCOME_MSG	"Welcome to Midorix!\n"
-
-typedef struct {
-	char key[MAX_ENTRY][MAX_KEY];
-	char value[MAX_ENTRY][MAX_VALUE];
-	int count;
-} Dictionary;
-
-// Dictionary functions
-void dict_set(Dictionary* dict, const char* key, const char* value);
-const char* dict_get(Dictionary* dict, const char* key);
 
 int readjson(const char* jsonf, cJSON** jsonout); // Parse JSON configuration file
 

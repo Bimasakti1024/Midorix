@@ -38,8 +38,13 @@ void cmdh_run(int argc, char** argv, const char* key) {
 		return;
 	}
 
-	char argk[MAX_VALUE];
-	snprintf(argk, sizeof(argk), "%s_arg", key);
+	int len = snprintf(NULL, 0, "%s_arg", key);
+	char* argk = malloc(len + 1);
+	if (!argk) {
+		perror("malloc");
+		return;
+	}
+	snprintf(argk, len + 1, "%s_arg", key);
 
 	const char* aval = cJSON_GetObjectItem(lconfig, argk)->valuestring;
 	char* argstr = NULL;
@@ -49,6 +54,8 @@ void cmdh_run(int argc, char** argv, const char* key) {
 	if (argstr) {
 		if (ssplit(argstr, &w) != 0) {
 			perror("wordexp");
+			free(argk);
+			free(argstr);
 			return;
 		}
 	}
@@ -61,6 +68,7 @@ void cmdh_run(int argc, char** argv, const char* key) {
 		wordfree(&w);
 		free(command);
 		free(argstr);
+		free(argk);
 		return;
 	}
 
@@ -72,6 +80,7 @@ void cmdh_run(int argc, char** argv, const char* key) {
 
 	execcmd(fcommand); // will use fcommand[0] = command
 	free(command);
+	free(argk);
 	if (argstr) free(argstr);
 }
 

@@ -7,51 +7,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-void dict_set(Dictionary* dict, const char* key, const char* value) {
-	// Check if we are exceeding the maximum number of entries
-	if (dict->count >= MAX_ENTRY) {
-		printf("Dictionary is full, Cannot add more entries.\n");
-		return;
-	}
-
-	// Ensure key and value are within allowed bounds
-	if (strlen(key) >= MAX_KEY) {
-		printf("Error: Key too long, Max allowed length is %d.\n", MAX_KEY - 1);
-		return;
-	}
-	if (strlen(value) >= MAX_VALUE) {
-		printf("Error: Value too long, Max allowed length is %d.\n", MAX_VALUE - 1);
-		return;
-	}
-
-	// Copy the key and value into the dictionary
-	strncpy(dict->key[dict->count], key, MAX_KEY - 1);
-	strncpy(dict->value[dict->count], value, MAX_VALUE - 1);
-
-	// Ensure null-termination in case the string is cut off
-	dict->key[dict->count][MAX_KEY - 1] = '\0';
-	dict->value[dict->count][MAX_VALUE - 1] = '\0';
-
-	// Increment the count to track the number of entries
-	dict->count++;
-}
-
-
-const char* dict_get(Dictionary *dict, const char *key) {
-	for (int i = 0; i < dict->count; i++) {
-		if (strcmp(dict->key[i], key) == 0) {
-			return dict->value[i];
-		}
-	}
-	return NULL;
-}
-
-int inihandler(void* user, const char* section, const char* name, const char* value) {
-	Dictionary* dict = (Dictionary*)user;
-	dict_set(dict, name, value);
-	return 1;
-}
-
 char* readf(const char* path) {
 	FILE* f = fopen(path, "rb");
 	if (!f) return NULL;

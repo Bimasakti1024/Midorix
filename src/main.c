@@ -17,7 +17,7 @@
 #define DEFAULT(value, fallback) ((value) ? (value) : (fallback))
 
 // Global
-char prefix[MAX_VALUE], prompt[MAX_VALUE];
+char *prefix, *prompt, *welcome_msg, *command;
 size_t prefixlen;
 static cJSON* config = NULL;
 
@@ -30,15 +30,18 @@ void sighandler(int sig) {
 void execute(char* command);
 
 void cleanup() {
-	if (config) {
-		cJSON_Delete(config);
-		config = NULL;
-	}
+	if (config) cJSON_Delete(config);
+	if (prefix) free(prefix);
+	if (prompt) free(prompt);
+	if (welcome_msg) free(welcome_msg);
+	if (command) free(command);
+	clear_history();
 }
 
 // Main
 int main(int argc, char* argv[]) {
 	atexit(cleanup);
+	setvbuf(stdout, NULL, _IONBF, 0);
 
 	// Signal handler
 	signal(SIGINT, sighandler);
@@ -59,21 +62,28 @@ int main(int argc, char* argv[]) {
 	cmdh_init_config(&config, configfn);
 
 	// Welcome
-	char welcome_msg[MAX_VALUE];
-	strncpy(welcome_msg, cJSON_GetObjectItem(config, "welcome_msg")->valuestring, MAX_VALUE);
+	welcome_msg = strdup(cJSON_GetObjectItem(config, "welcome_msg")->valuestring);
 	printf("%s", welcome_msg);
 
 	// Prompt
-	prompt[MAX_VALUE];
-	strncpy(prompt, cJSON_GetObjectItem(config, "prompt")->valuestring, MAX_VALUE);
+	prompt = strdup(cJSON_GetObjectItem(config, "prompt")->valuestring);
+	if (!prompt) {
+		perror("strdup");
+		return 1;
+	}
 
 	// Prefix
-	prefix[MAX_VALUE];
-	strncpy(prefix, cJSON_GetObjectItem(config, "prefix")->valuestring, MAX_VALUE);
+	prefix = strdup(cJSON_GetObjectItem(config, "prefix")->valuestring);
+	if (!prefix) {
+		perror("strdup");
+		return 1;
+	}
 	prefixlen = strlen(prefix);
 
+	// Set stifle_history(max history)
+	stifle_history(cJSON_GetObjectItem(config, "max_history")->valueint);
+
 	// Main loop
-	char command[4096];
 	while (1) {
 		char* input = readline(prompt);
 		if (!input) {
@@ -81,11 +91,16 @@ int main(int argc, char* argv[]) {
 			break;
 		}
 
-		if (strlen(input) > 0) {
+		int inputl = strlen(input);
+		if (inputl > 0) {
 			add_history(input);
-			strncpy(command, input, sizeof(command) - 1);
-			command[sizeof(command) - 1] = '\0';
+			command = strdup(input);
+			if (!command) {
+				perror("strdup");
+				return 1;
+			}
 			execute(command);
+			free(command);
 		}
 		free(input);
 	}
@@ -113,13 +128,13 @@ void execute(char* command) {
 			return;
 		}
 		free(pure_command);
-		printf("[Midorix] Executing midorix command: %s.\n", arg.we_wordv[0]);
 
 		int found = 0;
 		for (int i = 0; command_table[i].cmd != NULL; i++) {
 			if (strcmp(command_table[i].cmd, arg.we_wordv[0]) == 0 ||
 				strcmp(command_table[i].shortcut, arg.we_wordv[0]) == 0) {
 				found = 1;
+				printf("[Midorix] Executing Midorix command: %s\n", command_table[i].cmd);
 				command_table[i].handler(arg.we_wordc, arg.we_wordv);
 				break;
 			}
