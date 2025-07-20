@@ -1,2 +1,8 @@
+# Ignore all build
 build/*
 !build/.gitkeep
+
+# Ignore all Core Dump
+vgcore.*
+core*
+
