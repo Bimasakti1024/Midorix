@@ -26,11 +26,12 @@ void cmdh_init_config(cJSON** cfgout, const char* configfn) {
 }
 
 void cmdh_run(int argc, char** argv, const char* key) {
-	char* val = cJSON_GetObjectItem(lconfig, key)->valuestring;
-	if (!val) {
+	cJSON* kval = cJSON_GetObjectItem(lconfig, key);
+	if (!kval || !kval->valuestring) {
 		fprintf(stderr, "%s not configured.\n", key);
 		return;
 	}
+	char* val = kval->valuestring;
 
 	char* command = strdup(val); // allocate copy
 	if (!command) {
