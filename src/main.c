@@ -6,6 +6,7 @@
 #include <string.h>
 #include <limits.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -53,10 +54,8 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	printf("[Midorix] Found home path: %s\n", home);
-
 	char configfn[PATH_MAX];
-	snprintf(configfn, sizeof(configfn), "%s/.midorixc.json", home);
+	snprintf(configfn, sizeof(configfn), "%s/.midorix/config.json", home);
 
 	// Init configuration
 	cmdh_init_config(&config, configfn);
