@@ -7,14 +7,13 @@
 #include <limits.h>
 #include <signal.h>
 #include <sys/stat.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
 #include "util/util.h"
 #include "ext/cJSON/cJSON.h"
+#include "ext/linenoise/linenoise.h"
 #include "chandl/chandl.h"
 #include "chandl/cmd_handle.h"
 
@@ -33,20 +32,20 @@ void cleanup() {
 	if (welcome_msg) free(welcome_msg);
 	if (config_path) free(config_path);
 	if (ccmd_path) free(ccmd_path);
+	if (configfn) free(configfn);
 	if (command) free(command);
 	if (L) lua_close(L);
-	clear_history();
 }
 
 // Signal handler
 void sighandler(int sig) {
 	printf("[Midorix] Received signal: %d\n", sig);
-	char *ans = readline("Exit(y/n) ");
-	int b;
-	if (ans[0] == 'y' || ans[0] == 'Y') {
+	char *ans = linenoise("Exit(y/n) ");
+	int b = 0;
+	if (ans && (ans[0] == 'y' || ans[0] == 'Y')) {
 		b = 1;
 	}
-	free(ans);
+	if (ans) free(ans);
 	if (b) {
 		cleanup();
 		exit(0);
@@ -96,7 +95,7 @@ int main(int argc, char* argv[]) {
 	}
 	snprintf(configfn, len, "%s/config.json", config_path);
 
-	len = snprintf(NULL, 0, "%s/custom_command/", config_path);
+	len = snprintf(NULL, 0, "%s/custom_command/", config_path) + 1;
 	ccmd_path = malloc(len);
 	if (!ccmd_path) {
 		perror("malloc");
@@ -128,11 +127,11 @@ int main(int argc, char* argv[]) {
 	prefixlen = strlen(prefix);
 
 	// Set stifle_history(max history)
-	stifle_history(cJSON_GetObjectItem(config, "max_history")->valueint);
+	linenoiseHistorySetMaxLen(cJSON_GetObjectItem(config, "max_history")->valueint);
 
 	// Main loop
 	while (1) {
-		char* input = readline(prompt);
+		char* input = linenoise(prompt);
 		if (!input) {
 			fprintf(stderr, "[Midorix] Error: Input error.\n");
 			break;
@@ -140,7 +139,7 @@ int main(int argc, char* argv[]) {
 
 		int inputl = strlen(input);
 		if (inputl > 0) {
-			add_history(input);
+			linenoiseHistoryAdd(input);
 			command = strdup(input);
 			if (!command) {
 				perror("strdup");
@@ -176,6 +175,11 @@ void execute(char* command) {
 		}
 		free(pure_command);
 		char* cmdname = strdup(arg.we_wordv[0]);
+		if (!cmdname) {
+			perror("strdup");
+			goto execute_clean;
+			return;
+		}
 
 		int found = 0;
 		for (int i = 0; command_table[i].cmd != NULL; i++) {
@@ -197,21 +201,29 @@ void execute(char* command) {
 			char* ccmd = malloc(size);
 			if (!ccmd) {
 				perror("malloc");
-				exit(1);
+				goto execute_clean;
 			}
-			snprintf(ccmd, size + 1, "%s/%s", ccmd_path, cmdname);
+			snprintf(ccmd, size, "%s%s", ccmd_path, cmdname);
+
+			if (chkfexist(ccmd)) {
+				fprintf(stderr, "%s does not exist.\n", ccmd);
+				free(ccmd);
+				goto execute_clean;
+			}
 
 			if (luaL_dofile(L, ccmd) != LUA_OK) {
 				fprintf(stderr, "Error encountered when loading custom command: %s\n", lua_tostring(L, -1));
 				lua_pop(L, 1);
+				free(ccmd);
 				goto execute_clean;
 			} else { found = 1; }
+			free(ccmd);
 
 			// Push argc
 			lua_getglobal(L, "main");
 
 			if (!lua_isfunction(L, -1)) {
-			    fprintf(stderr, "%s is not a function!\n", cmdname);
+				fprintf(stderr, "%s is not a function!\n", cmdname);
 				lua_pop(L, 1);
 				goto execute_clean;
 			}

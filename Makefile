@@ -8,14 +8,14 @@ BUILD_DIR = build
 EXT_DIR = $(SRC_DIR)/ext
 UTIL_DIR = $(SRC_DIR)/util
 CHANDL_DIR = $(SRC_DIR)/chandl
-CJSON_DIR = $(EXT_DIR)/cJSON
 
 # Source files
 SRC_MAIN = $(SRC_DIR)/main.c
 SRC_UTIL = $(UTIL_DIR)/util.c
 SRC_CHANDL = $(CHANDL_DIR)/chandl.c
 SRC_CMDH = $(CHANDL_DIR)/cmd_handle.c
-SRC_CJSON = $(CJSON_DIR)/cJSON.c
+SRC_CJSON = $(EXT_DIR)/cJSON/cJSON.c
+SRC_LINENOISE = $(EXT_DIR)/linenoise/linenoise.c
 
 # Header files (only needed if dependencies tracked)
 HDR_UTIL = $(UTIL_DIR)/util.h
@@ -28,7 +28,8 @@ OBJ_UTIL = $(BUILD_DIR)/util.o
 OBJ_CHANDL = $(BUILD_DIR)/chandl.o
 OBJ_CMDH = $(BUILD_DIR)/cmd_handle.o
 OBJ_CJSON = $(BUILD_DIR)/cJSON.o
-OBJECTS = $(OBJ_MAIN) $(OBJ_UTIL) $(OBJ_CHANDL) $(OBJ_CMDH) $(OBJ_CJSON)
+OBJ_LINENOISE = $(BUILD_DIR)/linenoise.o
+OBJECTS = $(OBJ_MAIN) $(OBJ_UTIL) $(OBJ_CHANDL) $(OBJ_CMDH) $(OBJ_CJSON) $(OBJ_LINENOISE)
 
 # Output binary
 BIN = $(BUILD_DIR)/midorix
@@ -54,6 +55,9 @@ $(OBJ_CMDH): $(SRC_CMDH)
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 $(OBJ_CJSON): $(SRC_CJSON)
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+$(OBJ_LINENOISE): $(SRC_LINENOISE)
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 # Run target

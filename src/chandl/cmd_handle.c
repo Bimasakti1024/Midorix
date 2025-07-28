@@ -106,7 +106,9 @@ void cmd_help(int argc, char** argv) {
 }
 
 void cmd_scfg(int argc, char** argv) {
-	printf("%s\n", cJSON_Print(lconfig));
+	char* config = cJSON_Print(lconfig);
+	puts(config);
+	free(config);
 }
 
 void cmd_quit(int argc, char** argv) {
