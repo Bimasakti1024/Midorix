@@ -10,7 +10,7 @@ static cJSON* lconfig = NULL;
 
 void cmdh_init_config(cJSON** cfgout, const char* configfn) {
 	if (chkfexist(configfn) != 0) {
-		fprintf(stderr, "Configuration does not exist.\n");
+		fprintf(stderr, "Configuration file %s does not exist.\n", configfn);
 		exit(1);
 	}
 

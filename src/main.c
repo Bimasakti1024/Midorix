@@ -22,12 +22,35 @@
 char *prefix, *prompt, *welcome_msg, *command;
 size_t prefixlen;
 static cJSON* config = NULL;
-char config_path[PATH_MAX], ccmd_path[PATH_MAX];
+char *config_path, *configfn, *ccmd_path;
 lua_State *L = NULL;		// For user-defined commands made using LuA
+
+// Cleanup
+void cleanup() {
+	if (config) cJSON_Delete(config);
+	if (prefix) free(prefix);
+	if (prompt) free(prompt);
+	if (welcome_msg) free(welcome_msg);
+	if (config_path) free(config_path);
+	if (ccmd_path) free(ccmd_path);
+	if (command) free(command);
+	if (L) lua_close(L);
+	clear_history();
+}
 
 // Signal handler
 void sighandler(int sig) {
-	fprintf(stdout, "\n[Midorix] Received signal: %d\n", sig);
+	printf("[Midorix] Received signal: %d\n", sig);
+	char *ans = readline("Exit(y/n) ");
+	int b;
+	if (ans[0] == 'y' || ans[0] == 'Y') {
+		b = 1;
+	}
+	free(ans);
+	if (b) {
+		cleanup();
+		exit(0);
+	};
 }
 
 // Execute function
@@ -38,16 +61,6 @@ int dir_exist(const char* path) {
 	return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 }
 
-void cleanup() {
-	if (config) cJSON_Delete(config);
-	if (prefix) free(prefix);
-	if (prompt) free(prompt);
-	if (welcome_msg) free(welcome_msg);
-	if (command) free(command);
-	if (L) lua_close(L);
-	clear_history();
-}
-
 // Main
 int main(int argc, char* argv[]) {
 	atexit(cleanup);
@@ -56,21 +69,40 @@ int main(int argc, char* argv[]) {
 	// Signal handler
 	signal(SIGINT, sighandler);
 
-	// Config path
+	// Get home path
 	const char* home = getenv("HOME");
 	if (!home) {
 		fprintf(stderr, "[Midorix] Error: HOME environment variable not set.\n");
 		return 1;
 	}
-	snprintf(config_path, sizeof(config_path), "%s/.config/midorix", home);
+
+	// Get configuration directory path
+	int len = snprintf(NULL, 0, "%s/.config/midorix", home) + 1;
+	config_path = malloc(len);
+	if (!config_path) {
+		perror("malloc");
+		return 1;
+	}
+	snprintf(config_path, len, "%s/.config/midorix", home);
 	if (!dir_exist(config_path)) {
 		fprintf(stderr, "[Midorix] Error: Configuration directory not found.\n");
 	}
 
-	char configfn[PATH_MAX];
-	snprintf(configfn, sizeof(configfn), "%s/config.json", config_path);
+	len = snprintf(NULL, 0, "%s/config.json", config_path) + 1;
+	configfn = malloc(len);
+	if (!configfn) {
+		perror("malloc");
+		return 1;
+	}
+	snprintf(configfn, len, "%s/config.json", config_path);
 
-	snprintf(ccmd_path, sizeof(ccmd_path), "%s/custom_command/", config_path);
+	len = snprintf(NULL, 0, "%s/custom_command/", config_path);
+	ccmd_path = malloc(len);
+	if (!ccmd_path) {
+		perror("malloc");
+		return 1;
+	}
+	snprintf(ccmd_path, len, "%s/custom_command/", config_path);
 	if (!dir_exist(ccmd_path)) fprintf(stderr, "[Midorix] Warning: custom command does not exist.\n");
 
 	// Init configuration

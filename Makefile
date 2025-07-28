@@ -1,61 +1,72 @@
+# Compiler and flags
 CC = gcc
 CFLAGS = -O2 -g -Wall
 
-# Source files
-MAIN_SRC = src/main.c
-UTIL_SRC = src/util/util.c
-CJSON_SRC = src/ext/cJSON/cJSON.c
-CHANDL_SRC = src/chandl/chandl.c
-CMDH_SRC = src/chandl/cmd_handle.c
+# Paths
+SRC_DIR = src
+BUILD_DIR = build
+EXT_DIR = $(SRC_DIR)/ext
+UTIL_DIR = $(SRC_DIR)/util
+CHANDL_DIR = $(SRC_DIR)/chandl
+CJSON_DIR = $(EXT_DIR)/cJSON
 
-# Header
-UTIL_H = src/util/util.h
-CHANDL_H = src/chandl/chandl.h
-CMDH_H = src/chandl/cmd_handle.h
+# Source files
+SRC_MAIN = $(SRC_DIR)/main.c
+SRC_UTIL = $(UTIL_DIR)/util.c
+SRC_CHANDL = $(CHANDL_DIR)/chandl.c
+SRC_CMDH = $(CHANDL_DIR)/cmd_handle.c
+SRC_CJSON = $(CJSON_DIR)/cJSON.c
+
+# Header files (only needed if dependencies tracked)
+HDR_UTIL = $(UTIL_DIR)/util.h
+HDR_CHANDL = $(CHANDL_DIR)/chandl.h
+HDR_CMDH = $(CHANDL_DIR)/cmd_handle.h
 
 # Object files
-MAIN_BIN = build/midorix
-MAIN_OBJ = build/main.o
-UTIL_OBJ = build/util.o
-CJSON_OBJ = build/cJSON.o
-CHANDL_OBJ = build/chandl.o
-CMDH_OBJ = build/cmd_handle.o
-ALL_OBJ = $(MAIN_BIN) $(MAIN_OBJ) $(UTIL_OBJ) $(CJSON_OBJ) $(CHANDL_OBJ) $(CMDH_OBJ)
+OBJ_MAIN = $(BUILD_DIR)/main.o
+OBJ_UTIL = $(BUILD_DIR)/util.o
+OBJ_CHANDL = $(BUILD_DIR)/chandl.o
+OBJ_CMDH = $(BUILD_DIR)/cmd_handle.o
+OBJ_CJSON = $(BUILD_DIR)/cJSON.o
+OBJECTS = $(OBJ_MAIN) $(OBJ_UTIL) $(OBJ_CHANDL) $(OBJ_CMDH) $(OBJ_CJSON)
+
+# Output binary
+BIN = $(BUILD_DIR)/midorix
 
 # Default target
-all: clean build run
+all: $(BIN)
 
-# Clean target
+# Link step
+$(BIN): $(OBJECTS)
+	$(CC) -o $@ $^ -lreadline -llua -lm -ldl
+
+# Compile rules
+$(OBJ_MAIN): $(SRC_MAIN)
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+$(OBJ_UTIL): $(SRC_UTIL) $(HDR_UTIL)
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+$(OBJ_CHANDL): $(SRC_CHANDL)
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+$(OBJ_CMDH): $(SRC_CMDH)
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+$(OBJ_CJSON): $(SRC_CJSON)
+	$(CC) -c $< -o $@ $(CFLAGS)
+
+# Run target
+run: all
+	./$(BIN)
+
+# Clean
 clean:
-	rm -rf $(ALL_OBJ)
+	rm -rf $(BUILD_DIR)/*.o $(BIN)
 
-# Build target
-build: $(ALL_OBJ)
+# Memory Check
+memcheck: $(BIN)
+	valgrind --leak-check=full --show-leak-kinds=all -s $<
 
-# Build target for util.o
-$(UTIL_OBJ): $(UTIL_SRC) $(UTIL_H)
-	$(CC) -c -o $@ $(UTIL_SRC) $(CFLAGS)
-
-# Build target for cJSON.o
-$(CJSON_OBJ): $(CJSON_SRC)
-	$(CC) -c -o $@ $(CJSON_SRC) $(CFLAGS)
-
-# Build target for chandl.o
-$(CHANDL_OBJ): $(CHANDL_SRC)
-	$(CC) -c -o $@ $(CHANDL_SRC) $(CFLAGS)
-
-# Build target for the command handler
-$(CMDH_OBJ): $(CMDH_SRC)
-	$(CC) -c -o $@ $(CMDH_SRC) $(CFLAGS)
-
-# Build target for the main executable
-$(MAIN_OBJ): $(MAIN_SRC)
-	$(CC) -c -o $@ $(MAIN_SRC)
-
-# Link
-$(MAIN_BIN): $(ALL_OBJ)
-	$(CC) -o $@ build/* -lreadline -llua -lm -ldl
-
-run:
-	./$(MAIN_BIN)
+.PHONY: all run clean memcheck
 
