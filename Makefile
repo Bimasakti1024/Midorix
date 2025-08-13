@@ -52,7 +52,7 @@ $(OBJ_CHANDL): $(SRC_CHANDL)
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 $(OBJ_CMDH): $(SRC_CMDH)
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) -c $< -o $@ $(CFLAGS) -llua -lm -ldl
 
 $(OBJ_CJSON): $(SRC_CJSON)
 	$(CC) -c $< -o $@ $(CFLAGS)
@@ -72,5 +72,9 @@ clean:
 memcheck: $(BIN)
 	valgrind --leak-check=full --show-leak-kinds=all -s $<
 
-.PHONY: all run clean memcheck
+# clang-format
+clang-format:
+	find . -type d -wholename './src/ext' -prune -o -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format -i {} +
+
+.PHONY: all run clean memcheck clang-format
 
