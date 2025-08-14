@@ -64,7 +64,7 @@ void sighandler(int sig) {
 }
 
 // Execute function
-void execute(char *command);
+void execute(const char *command);
 
 int dir_exist(const char *path) {
 	struct stat st;
@@ -141,9 +141,19 @@ int main(int argc, char *argv[]) {
 	}
 	prefixlen = strlen(prefix);
 
-	// Set stifle_history(max history)
+	// Set max history
 	linenoiseHistorySetMaxLen(
 		cJSON_GetObjectItem(config, "max_history")->valueint);
+
+	// Auto-start command
+	cJSON *autostart = cJSON_GetObjectItem(config, "autostart");
+	if (cJSON_IsArray(autostart)) {
+		int size = cJSON_GetArraySize(autostart);
+		for (int i = 0; i < size; i++) {
+			cJSON *value = cJSON_GetArrayItem(autostart, i);
+			execute(value->valuestring);
+		}
+	}
 
 	// Main loop
 	while (1) {
@@ -171,7 +181,7 @@ int main(int argc, char *argv[]) {
 }
 
 // Execute command
-void execute(char *command) {
+void execute(const char *command) {
 	if (command == NULL || strlen(command) == 0)
 		return;
 
@@ -207,28 +217,11 @@ void execute(char *command) {
 				printf("[Midorix] Executing Midorix command: %s\n",
 					   command_table[i].cmd);
 				command_table[i].handler(arg.we_wordc, arg.we_wordv);
-				break;
+				goto execute_clean;
 			}
 		}
 
 		if (!found) {
-			// System fallback
-			wordexp_t arg;
-			if (ssplit(command, &arg) != 0) {
-				perror("wordexp");
-				return;
-			}
-
-			if (!arg.we_wordv) {
-				fprintf(stderr, "[Midorix] wordexp failed.\n");
-				return;
-			}
-
-			printf("[Midorix] Executing system command: %s\n", command);
-			execcmd(arg.we_wordv);
-			found = 1;
-			wordfree(&arg);
-		} else {
 			if (L)
 				lua_close(L);
 			L = luaL_newstate();
@@ -284,6 +277,23 @@ void execute(char *command) {
 				fprintf(stderr, "Runtime Error: %s\n", lua_tostring(L, -1));
 				lua_pop(L, 1);
 			}
+		} else if (!found) {
+			// System fallback
+			wordexp_t arg;
+			if (ssplit(command, &arg) != 0) {
+				perror("wordexp");
+				return;
+			}
+
+			if (!arg.we_wordv) {
+				fprintf(stderr, "[Midorix] wordexp failed.\n");
+				return;
+			}
+
+			printf("[Midorix] Executing system command: %s\n", command);
+			execcmd(arg.we_wordv);
+			wordfree(&arg);
+			found = 1;
 		}
 		if (!found)
 			fprintf(stderr, "[Midorix]: Command %s not found.", cmdname);
@@ -291,5 +301,6 @@ execute_clean:
 		wordfree(&arg);
 		if (cmdname)
 			free(cmdname);
+		return;
 	}
 }
