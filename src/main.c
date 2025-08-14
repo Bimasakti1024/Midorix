@@ -1,51 +1,62 @@
+// src/main.c
 #define _GNU_SOURCE
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-#include <string.h>
+#include <lauxlib.h>
 #include <limits.h>
-#include <signal.h>
-#include <sys/stat.h>
 #include <lua.h>
 #include <lualib.h>
-#include <lauxlib.h>
+#include <signal.h>
+#include <string.h>
+#include <sys/stat.h>
 
-#include "util/util.h"
-#include "ext/cJSON/cJSON.h"
-#include "ext/linenoise/linenoise.h"
 #include "chandl/chandl.h"
 #include "chandl/cmd_handle.h"
+#include "ext/cJSON/cJSON.h"
+#include "ext/linenoise/linenoise.h"
+#include "util/util.h"
 
 // Global
-char *prefix, *prompt, *welcome_msg, *command;
-size_t prefixlen;
-static cJSON* config = NULL;
-char *config_path, *configfn, *ccmd_path;
-lua_State *L = NULL;		// For user-defined commands made using LuA
+char		 *prefix, *prompt, *welcome_msg, *command;
+size_t		  prefixlen;
+static cJSON *config = NULL;
+char		 *config_path, *configfn, *ccmd_path;
+lua_State	 *L = NULL; // For user-defined commands made using LuA
 
 // Cleanup
 void cleanup() {
-	if (config) cJSON_Delete(config);
-	if (prefix) free(prefix);
-	if (prompt) free(prompt);
-	if (welcome_msg) free(welcome_msg);
-	if (config_path) free(config_path);
-	if (ccmd_path) free(ccmd_path);
-	if (configfn) free(configfn);
-	if (command) free(command);
-	if (L) lua_close(L);
+	if (config)
+		cJSON_Delete(config);
+	if (prefix)
+		free(prefix);
+	if (prompt)
+		free(prompt);
+	if (welcome_msg)
+		free(welcome_msg);
+	if (config_path)
+		free(config_path);
+	if (ccmd_path)
+		free(ccmd_path);
+	if (configfn)
+		free(configfn);
+	if (command)
+		free(command);
+	if (L)
+		lua_close(L);
 }
 
 // Signal handler
 void sighandler(int sig) {
 	printf("[Midorix] Received signal: %d\n", sig);
 	char *ans = linenoise("Exit(y/n) ");
-	int b = 0;
+	int	  b	  = 0;
 	if (ans && (ans[0] == 'y' || ans[0] == 'Y')) {
 		b = 1;
 	}
-	if (ans) free(ans);
+	if (ans)
+		free(ans);
 	if (b) {
 		cleanup();
 		exit(0);
@@ -53,15 +64,15 @@ void sighandler(int sig) {
 }
 
 // Execute function
-void execute(char* command);
+void execute(char *command);
 
-int dir_exist(const char* path) {
+int dir_exist(const char *path) {
 	struct stat st;
 	return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 }
 
 // Main
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	atexit(cleanup);
 	setvbuf(stdout, NULL, _IONBF, 0);
 
@@ -69,14 +80,15 @@ int main(int argc, char* argv[]) {
 	signal(SIGINT, sighandler);
 
 	// Get home path
-	const char* home = getenv("HOME");
+	const char *home = getenv("HOME");
 	if (!home) {
-		fprintf(stderr, "[Midorix] Error: HOME environment variable not set.\n");
+		fprintf(stderr,
+				"[Midorix] Error: HOME environment variable not set.\n");
 		return 1;
 	}
 
 	// Get configuration directory path
-	int len = snprintf(NULL, 0, "%s/.config/midorix", home) + 1;
+	int len		= snprintf(NULL, 0, "%s/.config/midorix", home) + 1;
 	config_path = malloc(len);
 	if (!config_path) {
 		perror("malloc");
@@ -84,10 +96,11 @@ int main(int argc, char* argv[]) {
 	}
 	snprintf(config_path, len, "%s/.config/midorix", home);
 	if (!dir_exist(config_path)) {
-		fprintf(stderr, "[Midorix] Error: Configuration directory not found.\n");
+		fprintf(stderr,
+				"[Midorix] Error: Configuration directory not found.\n");
 	}
 
-	len = snprintf(NULL, 0, "%s/config.json", config_path) + 1;
+	len		 = snprintf(NULL, 0, "%s/config.json", config_path) + 1;
 	configfn = malloc(len);
 	if (!configfn) {
 		perror("malloc");
@@ -95,20 +108,22 @@ int main(int argc, char* argv[]) {
 	}
 	snprintf(configfn, len, "%s/config.json", config_path);
 
-	len = snprintf(NULL, 0, "%s/custom_command/", config_path) + 1;
+	len		  = snprintf(NULL, 0, "%s/custom_command/", config_path) + 1;
 	ccmd_path = malloc(len);
 	if (!ccmd_path) {
 		perror("malloc");
 		return 1;
 	}
 	snprintf(ccmd_path, len, "%s/custom_command/", config_path);
-	if (!dir_exist(ccmd_path)) fprintf(stderr, "[Midorix] Warning: custom command does not exist.\n");
+	if (!dir_exist(ccmd_path))
+		fprintf(stderr, "[Midorix] Warning: custom command does not exist.\n");
 
 	// Init configuration
 	cmdh_init_config(&config, configfn);
 
 	// Welcome
-	welcome_msg = strdup(cJSON_GetObjectItem(config, "welcome_msg")->valuestring);
+	welcome_msg =
+		strdup(cJSON_GetObjectItem(config, "welcome_msg")->valuestring);
 	printf("%s", welcome_msg);
 
 	// Prompt
@@ -127,11 +142,12 @@ int main(int argc, char* argv[]) {
 	prefixlen = strlen(prefix);
 
 	// Set stifle_history(max history)
-	linenoiseHistorySetMaxLen(cJSON_GetObjectItem(config, "max_history")->valueint);
+	linenoiseHistorySetMaxLen(
+		cJSON_GetObjectItem(config, "max_history")->valueint);
 
 	// Main loop
 	while (1) {
-		char* input = linenoise(prompt);
+		char *input = linenoise(prompt);
 		if (!input) {
 			fprintf(stderr, "[Midorix] Error: Input error.\n");
 			break;
@@ -155,13 +171,15 @@ int main(int argc, char* argv[]) {
 }
 
 // Execute command
-void execute(char* command) {
-	if (command == NULL || strlen(command) == 0) return;
+void execute(char *command) {
+	if (command == NULL || strlen(command) == 0)
+		return;
 
-	if (strlen(command) > prefixlen && strncmp(command, prefix, prefixlen) == 0
-		&& command[prefixlen] != '\0') {
+	if (strlen(command) > prefixlen &&
+		strncmp(command, prefix, prefixlen) == 0 &&
+		command[prefixlen] != '\0') {
 		// Midorix command
-		char* pure_command = strdup(command + prefixlen);
+		char *pure_command = strdup(command + prefixlen);
 		if (!pure_command) {
 			perror("strdup");
 			return;
@@ -174,7 +192,7 @@ void execute(char* command) {
 			return;
 		}
 		free(pure_command);
-		char* cmdname = strdup(arg.we_wordv[0]);
+		char *cmdname = strdup(arg.we_wordv[0]);
 		if (!cmdname) {
 			perror("strdup");
 			goto execute_clean;
@@ -186,19 +204,38 @@ void execute(char* command) {
 			if (strcmp(command_table[i].cmd, cmdname) == 0 ||
 				strcmp(command_table[i].shortcut, cmdname) == 0) {
 				found = 1;
-				printf("[Midorix] Executing Midorix command: %s\n", command_table[i].cmd);
+				printf("[Midorix] Executing Midorix command: %s\n",
+					   command_table[i].cmd);
 				command_table[i].handler(arg.we_wordc, arg.we_wordv);
 				break;
 			}
 		}
 
 		if (!found) {
-			if (L) lua_close(L);
+			// System fallback
+			wordexp_t arg;
+			if (ssplit(command, &arg) != 0) {
+				perror("wordexp");
+				return;
+			}
+
+			if (!arg.we_wordv) {
+				fprintf(stderr, "[Midorix] wordexp failed.\n");
+				return;
+			}
+
+			printf("[Midorix] Executing system command: %s\n", command);
+			execcmd(arg.we_wordv);
+			found = 1;
+			wordfree(&arg);
+		} else {
+			if (L)
+				lua_close(L);
 			L = luaL_newstate();
 			luaL_openlibs(L);
 
 			size_t size = strlen(ccmd_path) + strlen(cmdname) + 1;
-			char* ccmd = malloc(size);
+			char  *ccmd = malloc(size);
 			if (!ccmd) {
 				perror("malloc");
 				goto execute_clean;
@@ -211,12 +248,17 @@ void execute(char* command) {
 				goto execute_clean;
 			}
 
+			found = 1;
 			if (luaL_dofile(L, ccmd) != LUA_OK) {
-				fprintf(stderr, "Error encountered when loading custom command: %s\n", lua_tostring(L, -1));
+				fprintf(stderr,
+						"Error encountered when loading custom command: %s\n",
+						lua_tostring(L, -1));
 				lua_pop(L, 1);
 				free(ccmd);
 				goto execute_clean;
-			} else { found = 1; }
+			} else {
+				found = 1;
+			}
 			free(ccmd);
 
 			// Push argc
@@ -232,7 +274,7 @@ void execute(char* command) {
 			// Push argv
 			lua_newtable(L);
 			for (int i = 0; i < arg.we_wordc; i++) {
-			    lua_pushinteger(L, i + 1);
+				lua_pushinteger(L, i + 1);
 				lua_pushstring(L, arg.we_wordv[i]);
 				lua_rawset(L, -3);
 			}
@@ -243,25 +285,11 @@ void execute(char* command) {
 				lua_pop(L, 1);
 			}
 		}
-		if (!found) fprintf(stderr, "[Midorix]: Command %s not found.", cmdname);
-		execute_clean:
-			wordfree(&arg);
-			if (cmdname) free(cmdname);
-	} else {
-		// System fallback
-		wordexp_t arg;
-		if (ssplit(command, &arg) != 0) {
-			perror("wordexp");
-			return;
-		}
-
-		if (!arg.we_wordv) {
-			fprintf(stderr, "[Midorix] wordexp failed.\n");
-			return;
-		}
-
-		printf("[Midorix] Executing system command: %s\n", command);
-		execcmd(arg.we_wordv);
+		if (!found)
+			fprintf(stderr, "[Midorix]: Command %s not found.", cmdname);
+execute_clean:
 		wordfree(&arg);
+		if (cmdname)
+			free(cmdname);
 	}
 }

@@ -1,3 +1,4 @@
+// src/chandl/commands.def
 #include "cmd_handle.h"
 
 CMD("helloWorld", "hw", cmd_helloWorld, "Say \"Hello, World.\"")
@@ -10,4 +11,7 @@ CMD("edit", "e", cmd_edit, "Edit File.")
 CMD("exec", "x", cmd_exec, "Execute(compile/interpret).")
 CMD("debug", "d", cmd_debug, "Debug.")
 CMD("memanalyze", "mema", cmd_mema, "Analyze Memory.")
+
+CMD("init_project", "ip", cmd_init_project, "Initialize Project.")
+CMD("build_project", "bp", cmd_build_project, "Build an initialized project.")
 

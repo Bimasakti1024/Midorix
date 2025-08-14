@@ -1,4 +1,33 @@
 BasedOnStyle: LLVM
+
+# Tabs instead of spaces
 UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+
+# Braces style: K&R
 BreakBeforeBraces: Attach
+
+# Indentation rules
+IndentCaseLabels: true
+IndentPPDirectives: AfterHash
+IndentGotoLabels: false
+NamespaceIndentation: All
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignOperands: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+# Spacing
+SpacesBeforeTrailingComments: 1
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceInEmptyParentheses: false
+
+# Forcing verbosity
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 

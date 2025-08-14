@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -O2 -g -Wall
+CFLAGS = -fsanitize=address -O2 -g -Wall
 
 # Paths
 SRC_DIR = src
@@ -39,7 +39,7 @@ all: $(BIN)
 
 # Link step
 $(BIN): $(OBJECTS)
-	$(CC) -o $@ $^ -lreadline -llua -lm -ldl
+	$(CC) -o $@ $^ $(CFLAGS) -lreadline -llua -lm -ldl
 
 # Compile rules
 $(OBJ_MAIN): $(SRC_MAIN)
