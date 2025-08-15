@@ -3,7 +3,7 @@
 #define UTIL_H
 
 #define _GNU_SOURCE
-#include "../ext/cJSON/cJSON.h"
+#include <cjson/cJSON.h>
 #include <stddef.h>
 #include <wordexp.h>
 

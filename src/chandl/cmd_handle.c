@@ -1,8 +1,8 @@
 // src/chandl/cmd_handle.c
 #include "cmd_handle.h"
-#include "../ext/cJSON/cJSON.h"
 #include "../util/util.h"
 #include "chandl.h"
+#include <cjson/cJSON.h>
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>

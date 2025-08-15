@@ -1,6 +1,6 @@
 // src/util/util.c
 #include "util.h"
-#include "../ext/cJSON/cJSON.h"
+#include <cjson/cJSON.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
