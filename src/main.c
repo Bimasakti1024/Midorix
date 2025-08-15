@@ -151,6 +151,7 @@ int main(int argc, char *argv[]) {
 		int size = cJSON_GetArraySize(autostart);
 		for (int i = 0; i < size; i++) {
 			cJSON *value = cJSON_GetArrayItem(autostart, i);
+			printf("%s\n", value->valuestring);
 			execute(value->valuestring);
 		}
 	}
@@ -236,7 +237,7 @@ void execute(const char *command) {
 			snprintf(ccmd, size, "%s%s", ccmd_path, cmdname);
 
 			if (chkfexist(ccmd)) {
-				fprintf(stderr, "%s does not exist.\n", ccmd);
+				fprintf(stderr, "%s does not exist.\n", cmdname);
 				free(ccmd);
 				goto execute_clean;
 			}
