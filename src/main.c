@@ -11,11 +11,11 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <cjson/cJSON.h>
+#include <linenoise.h>
 
 #include "chandl/chandl.h"
 #include "chandl/cmd_handle.h"
-#include "ext/cJSON/cJSON.h"
-#include "ext/linenoise/linenoise.h"
 #include "util/util.h"
 
 // Global

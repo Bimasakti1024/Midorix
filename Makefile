@@ -14,22 +14,13 @@ SRC_MAIN = $(SRC_DIR)/main.c
 SRC_UTIL = $(UTIL_DIR)/util.c
 SRC_CHANDL = $(CHANDL_DIR)/chandl.c
 SRC_CMDH = $(CHANDL_DIR)/cmd_handle.c
-SRC_CJSON = $(EXT_DIR)/cJSON/cJSON.c
-SRC_LINENOISE = $(EXT_DIR)/linenoise/linenoise.c
-
-# Header files (only needed if dependencies tracked)
-HDR_UTIL = $(UTIL_DIR)/util.h
-HDR_CHANDL = $(CHANDL_DIR)/chandl.h
-HDR_CMDH = $(CHANDL_DIR)/cmd_handle.h
 
 # Object files
 OBJ_MAIN = $(BUILD_DIR)/main.o
 OBJ_UTIL = $(BUILD_DIR)/util.o
 OBJ_CHANDL = $(BUILD_DIR)/chandl.o
 OBJ_CMDH = $(BUILD_DIR)/cmd_handle.o
-OBJ_CJSON = $(BUILD_DIR)/cJSON.o
-OBJ_LINENOISE = $(BUILD_DIR)/linenoise.o
-OBJECTS = $(OBJ_MAIN) $(OBJ_UTIL) $(OBJ_CHANDL) $(OBJ_CMDH) $(OBJ_CJSON) $(OBJ_LINENOISE)
+OBJECTS = $(OBJ_MAIN) $(OBJ_UTIL) $(OBJ_CHANDL) $(OBJ_CMDH)
 
 # Output binary
 BIN = $(BUILD_DIR)/midorix
@@ -39,7 +30,7 @@ all: $(BIN)
 
 # Link step
 $(BIN): $(OBJECTS)
-	$(CC) -o $@ $^ $(CFLAGS) -lreadline -llua -lm -ldl
+	$(CC) -o $@ $^ $(CFLAGS) -llinenoise -llua -lm -ldl -lcjson
 
 # Compile rules
 $(OBJ_MAIN): $(SRC_MAIN)
@@ -49,16 +40,10 @@ $(OBJ_UTIL): $(SRC_UTIL) $(HDR_UTIL)
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 $(OBJ_CHANDL): $(SRC_CHANDL)
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) -c $< -o $@ $(CFLAGS) -lcjson
 
 $(OBJ_CMDH): $(SRC_CMDH)
-	$(CC) -c $< -o $@ $(CFLAGS) -llua -lm -ldl
-
-$(OBJ_CJSON): $(SRC_CJSON)
-	$(CC) -c $< -o $@ $(CFLAGS)
-
-$(OBJ_LINENOISE): $(SRC_LINENOISE)
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) -c $< -o $@ $(CFLAGS) -llua -lm -ldl -lcjson
 
 # Run target
 run: all

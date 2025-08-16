@@ -139,6 +139,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 	if (index < 0)
 		index = lua_gettop(L) + index + 1;
 
+	// If it is not a table
 	if (!lua_istable(L, index)) {
 		fprintf(
 			stderr,
@@ -154,6 +155,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 	while (lua_next(L, index) != 0) {
 		const char *key = NULL;
 
+		// Set the key and value
 		if (lua_type(L, -2) == LUA_TSTRING) {
 			key = lua_tostring(L, -2);
 		} else if (lua_type(L, -2) == LUA_TNUMBER) {
@@ -165,6 +167,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 			continue;
 		}
 
+		// Add the key and value to the result
 		switch (lua_type(L, -1)) {
 			case LUA_TSTRING:
 				cJSON_AddStringToObject(result, key, lua_tostring(L, -1));
@@ -188,6 +191,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 		lua_pop(L, 1);
 	}
 
+	// Return the result
 	return result;
 }
 
@@ -197,10 +201,12 @@ void cmd_helloWorld(int argc, char **argv) {
 }
 
 void cmd_help(int argc, char **argv) {
+	printf("NOTICE: This does not include custom commands.\n");
 	for (int i = 0; command_table[i].cmd != NULL; i++) {
 		printf("Name: %s\n", command_table[i].cmd);
 		printf("Shortcut: %s\n", command_table[i].shortcut);
-		printf("Description: %s\n\n", command_table[i].desc);
+		printf("Description: %s\n", command_table[i].desc);
+		printf("========================================\n");
 	}
 }
 
@@ -252,6 +258,7 @@ void cmd_init_project(int argc, char **argv) {
 	}
 	luaL_openlibs(LPCFG);
 
+	// Check mdrxproject.lua file existence
 	if (luaL_dofile(LPCFG, "mdrxproject.lua") != LUA_OK) {
 		fprintf(stderr, "%s\n", lua_tostring(LPCFG, -1));
 		lua_pop(LPCFG, 1);
@@ -260,6 +267,7 @@ void cmd_init_project(int argc, char **argv) {
 		return;
 	}
 
+	// Get the project variable
 	lua_getglobal(LPCFG, "project");
 
 	if (PCFG) {
@@ -267,6 +275,7 @@ void cmd_init_project(int argc, char **argv) {
 		PCFG = NULL;
 	}
 
+	// Convert Lua to JSON
 	PCFG = luaTable2cJSON(LPCFG, -1);
 	if (!PCFG) {
 		fprintf(stderr, "Failed to convert Lua table to JSON.\n");
@@ -275,25 +284,24 @@ void cmd_init_project(int argc, char **argv) {
 		return;
 	}
 
-	char *r = cJSON_Print(PCFG);
-	if (r) {
-		puts(r);
-		free(r);
-	}
-
 	printf("Project successfully initiated.\n");
 }
 
 void cmd_build_project(int argc, char **argv) {
+	// Get the build_config
 	cJSON *bcfg = cJSON_GetObjectItemCaseSensitive(PCFG, "build_config");
 	if (!bcfg)
 		return;
 
+	// Get some configuration from build_config
 	cJSON *langcfg = cJSON_GetObjectItemCaseSensitive(bcfg, "languages");
 	cJSON *target  = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
-	if (!target)
+	if (!target) {
+		printf("No build target found.\n");
 		return;
+	}
 
+	// Iterate the targets
 	int size = cJSON_GetArraySize(target);
 	for (int i = 0; i < size; i++) {
 		cJSON *item = cJSON_GetArrayItem(target, i);
@@ -310,9 +318,12 @@ void cmd_build_project(int argc, char **argv) {
 		cJSON *flags	= cJSON_GetObjectItem(slang, "flags");
 		char  *flagsv	= flags->valuestring ? flags->valuestring : "";
 
-		if (!source || !lang || !args)
+		if (!source || !lang) {
+			fprintf(stderr, "The target index %d does not have source or a language.\n", i);
 			continue;
+		}
 
+		// Declare fcmd variable for the command to execute later
 		int size = strlen(executor) + strlen(argsv) + strlen(flagsv) +
 				   strlen(source) + 4;
 		char *fcmd = malloc(size);
@@ -321,8 +332,10 @@ void cmd_build_project(int argc, char **argv) {
 			continue;
 		}
 
+		// Construct the fcmd
 		snprintf(fcmd, size, "%s %s %s %s", executor, argsv, flagsv, source);
 
+		// fcmd_s for the wordexp_t form of fcmd
 		wordexp_t fcmd_s;
 		ssplit(fcmd, &fcmd_s);
 		free(fcmd);
@@ -331,6 +344,7 @@ void cmd_build_project(int argc, char **argv) {
 			wordfree(&fcmd_s);
 		}
 
+		// Execute
 		execcmd(fcmd_s.we_wordv);
 		wordfree(&fcmd_s);
 	}
