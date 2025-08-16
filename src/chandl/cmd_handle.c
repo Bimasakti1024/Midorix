@@ -319,7 +319,9 @@ void cmd_build_project(int argc, char **argv) {
 		char  *flagsv	= flags->valuestring ? flags->valuestring : "";
 
 		if (!source || !lang) {
-			fprintf(stderr, "The target index %d does not have source or a language.\n", i);
+			fprintf(stderr,
+					"The target index %d does not have source or a language.\n",
+					i);
 			continue;
 		}
 

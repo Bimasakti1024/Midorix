@@ -2,8 +2,8 @@
 #ifndef CMD_HANDLE_H
 #define CMD_HANDLE_H
 
-#include <cjson/cJSON.h>
 #include "../util/util.h"
+#include <cjson/cJSON.h>
 
 void cmdh_init_config(cJSON **cfgout, const char *configfn);
 
