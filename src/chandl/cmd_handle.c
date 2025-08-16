@@ -201,7 +201,7 @@ void cmd_helloWorld(int argc, char **argv) {
 }
 
 void cmd_help(int argc, char **argv) {
-	printf("NOTICE: This does not include custom commands.\n");
+	printf("NOTICE: This does not include custom commands.\n========================================\n");
 	for (int i = 0; command_table[i].cmd != NULL; i++) {
 		printf("Name: %s\n", command_table[i].cmd);
 		printf("Shortcut: %s\n", command_table[i].shortcut);
