@@ -156,10 +156,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	char *cconfig = cJSON_Print(config);
-	puts(cconfig);
-	free(cconfig);
-
 	// Main loop
 	while (1) {
 		char *input = linenoise(prompt);
