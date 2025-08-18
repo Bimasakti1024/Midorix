@@ -205,8 +205,6 @@ void execute(const char *command) {
 			if (strcmp(command_table[i].cmd, cmdname) == 0 ||
 				strcmp(command_table[i].shortcut, cmdname) == 0) {
 				found = 1;
-				printf("[Midorix] Executing Midorix command: %s\n",
-					   command_table[i].cmd);
 				command_table[i].handler(arg.we_wordc, arg.we_wordv);
 				goto execute_clean;
 			}

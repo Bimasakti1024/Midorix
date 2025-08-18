@@ -123,15 +123,10 @@ void flush_stdin() {
 	return;
 }
 void execcmd(char *argv[]) {
-	printf("Executing: ");
-	for (int i = 0; argv[i]; i++) {
+	for (int i = 0; argv[i] != NULL; i++) {
 		printf("%s", argv[i]);
-		if (argv[i + 1] != NULL)
-			printf(" ");
-		else
-			printf("\n");
+		if (argv[i + 1] != NULL) printf(" ");
 	}
-
 	pid_t pid = fork();
 
 	if (pid == 0) {
@@ -144,9 +139,9 @@ void execcmd(char *argv[]) {
 		int status;
 		waitpid(pid, &status, 0);
 		if (WIFEXITED(status)) {
-			printf("Command exited with code: %d\n", WEXITSTATUS(status));
+			printf("\nCommand exited with code: %d\n", WEXITSTATUS(status));
 		} else if (WTERMSIG(status)) {
-			printf("Command terminated with signal: %d\n", WTERMSIG(status));
+			printf("\nCommand terminated with signal: %d\n", WTERMSIG(status));
 		}
 	} else {
 		perror("fork");

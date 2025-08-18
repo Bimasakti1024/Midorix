@@ -1,5 +1,6 @@
 // src/chandl/cmd_handle.c
 #include "cmd_handle.h"
+#include "../projectutil/projectutil.h"
 #include "../util/util.h"
 #include "chandl.h"
 #include <cjson/cJSON.h>
@@ -11,18 +12,13 @@
 #include <string.h>
 #include <wordexp.h>
 
-static cJSON	 *lconfig = NULL;
-static cJSON	 *PCFG	  = NULL;
-static lua_State *LPCFG	  = NULL;
+static cJSON *lconfig = NULL;
+static cJSON *PCFG	  = NULL;
 
 void cmdh_cleanup() {
 	if (PCFG) {
 		cJSON_Delete(PCFG);
 		PCFG = NULL;
-	}
-	if (LPCFG) {
-		lua_close(LPCFG);
-		LPCFG = NULL;
 	}
 }
 
@@ -40,19 +36,6 @@ void cmdh_init_config(cJSON **cfgout, const char *configfn) {
 	}
 
 	*cfgout = lconfig;
-
-	// Close old Lua state if exists
-	if (LPCFG) {
-		lua_close(LPCFG);
-		LPCFG = NULL;
-	}
-
-	LPCFG = luaL_newstate();
-	if (!LPCFG) {
-		fprintf(stderr, "Failed to initialize Lua state.\n");
-		exit(1);
-	}
-	luaL_openlibs(LPCFG);
 
 	atexit(cmdh_cleanup);
 	printf("[Midorix] Loaded configuration.\n");
@@ -135,73 +118,14 @@ void cmdh_run(int argc, char **argv, const char *key) {
 	wordfree(&w);
 }
 
-cJSON *luaTable2cJSON(lua_State *L, int index) {
-	if (index < 0)
-		index = lua_gettop(L) + index + 1;
-
-	// If it is not a table
-	if (!lua_istable(L, index)) {
-		fprintf(
-			stderr,
-			"Cannot convert Lua table to JSON because it is not a table.\n");
-		return NULL;
-	}
-
-	cJSON *result = cJSON_CreateObject();
-	if (!result)
-		return NULL;
-
-	lua_pushnil(L);
-	while (lua_next(L, index) != 0) {
-		const char *key = NULL;
-
-		// Set the key and value
-		if (lua_type(L, -2) == LUA_TSTRING) {
-			key = lua_tostring(L, -2);
-		} else if (lua_type(L, -2) == LUA_TNUMBER) {
-			static char buf[32];
-			snprintf(buf, sizeof(buf), "%lld", (long long)lua_tointeger(L, -2));
-			key = buf;
-		} else {
-			lua_pop(L, 1);
-			continue;
-		}
-
-		// Add the key and value to the result
-		switch (lua_type(L, -1)) {
-			case LUA_TSTRING:
-				cJSON_AddStringToObject(result, key, lua_tostring(L, -1));
-				break;
-			case LUA_TNUMBER:
-				cJSON_AddNumberToObject(result, key, lua_tonumber(L, -1));
-				break;
-			case LUA_TBOOLEAN:
-				cJSON_AddBoolToObject(result, key, lua_toboolean(L, -1));
-				break;
-			case LUA_TTABLE: {
-				cJSON *sub = luaTable2cJSON(L, lua_gettop(L));
-				if (sub) {
-					cJSON_AddItemToObject(result, key, sub);
-				}
-				break;
-			}
-			default:
-				break;
-		}
-		lua_pop(L, 1);
-	}
-
-	// Return the result
-	return result;
-}
-
 // Command implementations
 void cmd_helloWorld(int argc, char **argv) {
 	printf("Hello, World!\n");
 }
 
 void cmd_help(int argc, char **argv) {
-	printf("NOTICE: This does not include custom commands.\n========================================\n");
+	printf("NOTICE: This does not include custom "
+		   "commands.\n========================================\n");
 	for (int i = 0; command_table[i].cmd != NULL; i++) {
 		printf("Name: %s\n", command_table[i].cmd);
 		printf("Shortcut: %s\n", command_table[i].shortcut);
@@ -238,116 +162,42 @@ void cmd_mema(int argc, char **argv) {
 	cmdh_run(argc, argv, "memanalyzer");
 }
 
-void cmd_init_project(int argc, char **argv) {
-	if (chkfexist("mdrxproject.lua")) {
-		fprintf(stderr, "Error: mdrxproject.lua does not exist.\n");
-		return;
-	}
+// Project manager
 
-	printf("Initiating project.\n");
-
-	// Close old Lua state
-	if (LPCFG) {
-		lua_close(LPCFG);
-		LPCFG = NULL;
-	}
-	LPCFG = luaL_newstate();
-	if (!LPCFG) {
-		fprintf(stderr, "Failed to initialize Lua.\n");
-		return;
-	}
-	luaL_openlibs(LPCFG);
-
-	// Check mdrxproject.lua file existence
-	if (luaL_dofile(LPCFG, "mdrxproject.lua") != LUA_OK) {
-		fprintf(stderr, "%s\n", lua_tostring(LPCFG, -1));
-		lua_pop(LPCFG, 1);
-		lua_close(LPCFG);
-		LPCFG = NULL;
-		return;
-	}
-
-	// Get the project variable
-	lua_getglobal(LPCFG, "project");
-
-	if (PCFG) {
-		cJSON_Delete(PCFG);
-		PCFG = NULL;
-	}
-
-	// Convert Lua to JSON
-	PCFG = luaTable2cJSON(LPCFG, -1);
+// Subfunction
+static void psub_init(void)  { projectutil_init(&PCFG); }
+static void psub_build(void) { projectutil_build(PCFG); }
+static void psub_deinit(void) {
 	if (!PCFG) {
-		fprintf(stderr, "Failed to convert Lua table to JSON.\n");
-		lua_close(LPCFG);
-		LPCFG = NULL;
+		printf("No project is currently initialized.\n");
 		return;
 	}
-
-	printf("Project successfully initiated.\n");
+	cJSON_Delete(PCFG);
+	PCFG = NULL;
+	printf("Project deinitialized.\n");
 }
 
-void cmd_build_project(int argc, char **argv) {
-	// Get the build_config
-	cJSON *bcfg = cJSON_GetObjectItemCaseSensitive(PCFG, "build_config");
-	if (!bcfg)
-		return;
+//  Main function
+void cmd_project(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "No action were provided.\n");
+        return;
+    }
 
-	// Get some configuration from build_config
-	cJSON *langcfg = cJSON_GetObjectItemCaseSensitive(bcfg, "languages");
-	cJSON *target  = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
-	if (!target) {
-		printf("No build target found.\n");
-		return;
-	}
+    noargCommand subcommands[] = {
+        {"init", "int", psub_init, "Initialize project."},
+		{"deinit", "dint", psub_deinit, "Deinitialize project."},
+        {"build", "build", psub_build, "Build initiated project."},
+        {NULL, NULL, NULL, NULL}
+    };
 
-	// Iterate the targets
-	int size = cJSON_GetArraySize(target);
-	for (int i = 0; i < size; i++) {
-		cJSON *item = cJSON_GetArrayItem(target, i);
-		if (!item)
-			continue;
+    for (int i = 0; subcommands[i].cmd != NULL; i++) {
+        if ((strcmp(subcommands[i].cmd, argv[1]) == 0) || (strcmp(subcommands[i].shortcut, argv[1]) == 0)) {
+            subcommands[i].handler();
+            return;
+        }
+    }
 
-		char  *source = cJSON_GetObjectItem(item, "source")->valuestring;
-		char  *lang	  = cJSON_GetObjectItem(item, "language")->valuestring;
-		cJSON *args	  = cJSON_GetObjectItem(item, "args");
-		char  *argsv  = args->valuestring ? args->valuestring : "";
-
-		cJSON *slang	= cJSON_GetObjectItem(langcfg, lang);
-		char  *executor = cJSON_GetObjectItem(slang, "executor")->valuestring;
-		cJSON *flags	= cJSON_GetObjectItem(slang, "flags");
-		char  *flagsv	= flags->valuestring ? flags->valuestring : "";
-
-		if (!source || !lang) {
-			fprintf(stderr,
-					"The target index %d does not have source or a language.\n",
-					i);
-			continue;
-		}
-
-		// Declare fcmd variable for the command to execute later
-		int size = strlen(executor) + strlen(argsv) + strlen(flagsv) +
-				   strlen(source) + 4;
-		char *fcmd = malloc(size);
-		if (!fcmd) {
-			perror("malloc");
-			continue;
-		}
-
-		// Construct the fcmd
-		snprintf(fcmd, size, "%s %s %s %s", executor, argsv, flagsv, source);
-
-		// fcmd_s for the wordexp_t form of fcmd
-		wordexp_t fcmd_s;
-		ssplit(fcmd, &fcmd_s);
-		free(fcmd);
-		if (!fcmd_s.we_wordv) {
-			perror("wordexp");
-			wordfree(&fcmd_s);
-		}
-
-		// Execute
-		execcmd(fcmd_s.we_wordv);
-		wordfree(&fcmd_s);
-	}
+    fprintf(stderr, "Action not recognized.\n");
 }
+

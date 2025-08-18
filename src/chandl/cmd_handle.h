@@ -18,7 +18,6 @@ void cmd_exec(int argc, char **argv);
 void cmd_debug(int argc, char **argv);
 void cmd_mema(int argc, char **argv);
 
-void cmd_init_project(int argc, char **argv);
-void cmd_build_project(int argc, char **argv);
+void cmd_project(int argc, char **argv);
 
 #endif

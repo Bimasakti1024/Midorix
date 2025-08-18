@@ -9,5 +9,7 @@
 #define CMD(name, shortcut, func, desc) {name, shortcut, func, desc},
 Command command_table[] = {
 #include "commands.def"
-	{NULL, NULL, NULL}};
+	{NULL, NULL, NULL, NULL}
+};
+
 #undef CMD
