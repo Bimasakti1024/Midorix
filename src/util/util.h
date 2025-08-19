@@ -19,7 +19,8 @@ int readjson(const char *jsonf,
 int chkfexist(const char *filename); // Check file existence
 
 // String Manipulations
-int	 ssplit(const char *input, wordexp_t *dest);
+char *append(const char *fstr, const char *sstr);
+int	  ssplit(const char *input, wordexp_t *dest);
 
 void flush_stdin(); // Flush stdin
 

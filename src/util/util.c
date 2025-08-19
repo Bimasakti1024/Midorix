@@ -46,6 +46,18 @@ int chkfexist(const char *filename) {
 	return access(filename, F_OK);
 }
 
+char *append(const char *fstr, const char *sstr) {
+	int size = strlen(fstr) + strlen(sstr) + 1;
+
+	char *result = malloc(size);
+	if (!result) {
+		perror("malloc");
+		return NULL;
+	}
+	snprintf(result, size, "%s%s", fstr, sstr);
+	return result;
+}
+
 int ssplit(const char *input, wordexp_t *dest) {
 	int ret = wordexp(input, dest, 0);
 	if (ret != 0) {
@@ -65,7 +77,8 @@ void flush_stdin() {
 void execcmd(char *argv[]) {
 	for (int i = 0; argv[i] != NULL; i++) {
 		printf("%s", argv[i]);
-		if (argv[i + 1] != NULL) printf(" ");
+		if (argv[i + 1] != NULL)
+			printf(" ");
 	}
 	printf("\n");
 	pid_t pid = fork();

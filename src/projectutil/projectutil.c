@@ -135,13 +135,16 @@ void projectutil_build(const cJSON *PCFG) {
 	// Get the build_config
 	cJSON *bcfg = cJSON_GetObjectItemCaseSensitive(PCFG, "build_config");
 	if (!bcfg) {
-		fprintf(stderr, "build_config object in project configuration does not exist.\n");
+		fprintf(
+			stderr,
+			"build_config object in project configuration does not exist.\n");
 		return;
 	}
 
 	// Print project name and version
 	char *pname = cJSON_GetObjectItemCaseSensitive(PCFG, "name")->valuestring;
-	char *pversion = cJSON_GetObjectItemCaseSensitive(PCFG, "version")->valuestring;
+	char *pversion =
+		cJSON_GetObjectItemCaseSensitive(PCFG, "version")->valuestring;
 	printf("Building %s %s.\n", pname, pversion);
 
 	// Get some configuration from build_config

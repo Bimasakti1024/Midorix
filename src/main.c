@@ -88,33 +88,26 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Get configuration directory path
-	int len		= snprintf(NULL, 0, "%s/.config/midorix", home) + 1;
-	config_path = malloc(len);
+	config_path = append(home, "/.config/midorix");
 	if (!config_path) {
 		perror("malloc");
 		return 1;
 	}
-	snprintf(config_path, len, "%s/.config/midorix", home);
 	if (!dir_exist(config_path)) {
 		fprintf(stderr,
 				"[Midorix] Error: Configuration directory not found.\n");
 	}
 
-	len		 = snprintf(NULL, 0, "%s/config.json", config_path) + 1;
-	configfn = malloc(len);
+	configfn = append(config_path, "/config.json");
 	if (!configfn) {
-		perror("malloc");
 		return 1;
 	}
-	snprintf(configfn, len, "%s/config.json", config_path);
 
-	len		  = snprintf(NULL, 0, "%s/custom_command/", config_path) + 1;
-	ccmd_path = malloc(len);
+	ccmd_path = append(config_path, "/custom_command");
 	if (!ccmd_path) {
 		perror("malloc");
 		return 1;
 	}
-	snprintf(ccmd_path, len, "%s/custom_command/", config_path);
 	if (!dir_exist(ccmd_path))
 		fprintf(stderr, "[Midorix] Warning: custom command does not exist.\n");
 
@@ -210,13 +203,10 @@ void execute(const char *command) {
 			}
 		}
 	}
-	size_t size = strlen(ccmd_path) + strlen(cmdname) + 1;
-	char  *ccmd = malloc(size);
+	char *ccmd = append(ccmd_path, cmdname);
 	if (!ccmd) {
-		perror("malloc");
 		goto execute_clean;
 	}
-	snprintf(ccmd, size, "%s%s", ccmd_path, cmdname);
 
 	if (chkfexist(ccmd)) {
 		free(ccmd);
