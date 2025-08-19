@@ -46,66 +46,6 @@ int chkfexist(const char *filename) {
 	return access(filename, F_OK);
 }
 
-void feval(const char *input, char *output, size_t maxlen) {
-	size_t i = 0, j = 0;
-	size_t len = strlen(input);
-
-	// Check string lenght
-	if (len >= 2 && ((input[0] == '"' && input[len - 1] == '"') ||
-					 (input[0] == '\'' && input[len - 1] == '\''))) {
-		// Remove first and last quote
-		i = 1;
-		len -= 1;
-	}
-
-	while (i < len && j < maxlen - 1) {
-		if (input[i] == '\\') {
-			i++;
-			if (i >= len)
-				break;
-			switch (input[i]) {
-				case 'n':
-					output[j++] = '\n';
-					break;
-				case 't':
-					output[j++] = '\t';
-					break;
-				case 'r':
-					output[j++] = '\r';
-					break;
-				case '"':
-					output[j++] = '"';
-					break;
-				case '\'':
-					output[j++] = '\'';
-					break;
-				case '\\':
-					output[j++] = '\\';
-					break;
-				case '0':
-					output[j++] = '\0';
-					break;
-				default:
-					output[j++] = input[i];
-					break;
-			}
-		} else {
-			output[j++] = input[i];
-		}
-		i++;
-	}
-
-	output[j] = '\0';
-}
-
-void sfeval(const char *input, char *output, size_t maxlen) {
-	char buffer[maxlen];
-	strncpy(buffer, input, maxlen);
-	buffer[maxlen - 1] = '\0';
-
-	feval(buffer, output, maxlen);
-}
-
 int ssplit(const char *input, wordexp_t *dest) {
 	int ret = wordexp(input, dest, 0);
 	if (ret != 0) {
