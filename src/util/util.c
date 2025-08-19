@@ -127,6 +127,7 @@ void execcmd(char *argv[]) {
 		printf("%s", argv[i]);
 		if (argv[i + 1] != NULL) printf(" ");
 	}
+	printf("\n");
 	pid_t pid = fork();
 
 	if (pid == 0) {

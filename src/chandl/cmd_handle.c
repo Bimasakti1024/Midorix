@@ -124,13 +124,13 @@ void cmd_helloWorld(int argc, char **argv) {
 }
 
 void cmd_help(int argc, char **argv) {
-	printf("NOTICE: This does not include custom "
-		   "commands.\n========================================\n");
+	printf("List of built-in commands:\n"
+		"  NAME          ALIAS     DESCRIPTION\n");
 	for (int i = 0; command_table[i].cmd != NULL; i++) {
-		printf("Name: %s\n", command_table[i].cmd);
-		printf("Shortcut: %s\n", command_table[i].shortcut);
-		printf("Description: %s\n", command_table[i].desc);
-		printf("========================================\n");
+		printf("  %-10s    %-6s    %s\n",
+		 command_table[i].cmd,
+		 command_table[i].alias,
+		 command_table[i].desc);
 	}
 }
 
@@ -166,8 +166,8 @@ void cmd_mema(int argc, char **argv) {
 
 // Subfunction
 static void psub_init(void)  { projectutil_init(&PCFG); }
-static void psub_build(void) { projectutil_build(PCFG); }
 static void psub_deinit(void) {
+	// Safety
 	if (!PCFG) {
 		printf("No project is currently initialized.\n");
 		return;
@@ -176,23 +176,49 @@ static void psub_deinit(void) {
 	PCFG = NULL;
 	printf("Project deinitialized.\n");
 }
+static void psub_build(void) { projectutil_build(PCFG); }
+static void psub_show(void) {
+	char *cconfig = cJSON_Print(PCFG);
+	if (cconfig) {
+		puts(cconfig);
+		free(cconfig);
+	} else {
+		fprintf(stderr, "Configuration is empty.\n");
+	}
+}
+
+extern noargCommand subcommands[];
+
+static void psub_help(void) {
+    printf("Available project subcommands:\n"
+		   "  NAME          ALIAS     DESCRIPTION\n");
+    for (int i = 0; subcommands[i].cmd != NULL; i++) {
+        printf("  %-10s    %-6s    %s\n",
+            subcommands[i].cmd,
+            subcommands[i].alias,
+            subcommands[i].desc);
+    }
+}
+
+// subcommands index
+noargCommand subcommands[] = {
+    {"init", "i", psub_init, "Initialize project."},
+    {"deinit", "di", psub_deinit, "Deinitialize project."},
+    {"build", "b", psub_build, "Build initiated project."},
+    {"show", "s", psub_show, "Show configuration."},
+    {"help", "h", psub_help, "Show help."},
+    {NULL, NULL, NULL, NULL}
+};
 
 //  Main function
 void cmd_project(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "No action were provided.\n");
+        fprintf(stderr, "No action were provided. Use help action for list of subcommands.\n");
         return;
     }
 
-    noargCommand subcommands[] = {
-        {"init", "int", psub_init, "Initialize project."},
-		{"deinit", "dint", psub_deinit, "Deinitialize project."},
-        {"build", "build", psub_build, "Build initiated project."},
-        {NULL, NULL, NULL, NULL}
-    };
-
     for (int i = 0; subcommands[i].cmd != NULL; i++) {
-        if ((strcmp(subcommands[i].cmd, argv[1]) == 0) || (strcmp(subcommands[i].shortcut, argv[1]) == 0)) {
+        if ((strcmp(subcommands[i].cmd, argv[1]) == 0) || (strcmp(subcommands[i].alias, argv[1]) == 0)) {
             subcommands[i].handler();
             return;
         }

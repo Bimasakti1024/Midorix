@@ -4,14 +4,14 @@
 
 typedef struct {
 	const char *cmd;
-	const char *shortcut;
+	const char *alias;
 	void (*handler)(void);
 	const char *desc;
 } noargCommand;
 
 typedef struct {
 	const char *cmd;
-	const char *shortcut;
+	const char *alias;
 	void (*handler)(int, char **);
 	const char *desc;
 } Command;

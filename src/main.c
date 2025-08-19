@@ -203,7 +203,7 @@ void execute(const char *command) {
 		memmove(cmdname, cmdname + prefixlen, strlen(cmdname + prefixlen) + 1);
 		for (int i = 0; command_table[i].cmd != NULL; i++) {
 			if (strcmp(command_table[i].cmd, cmdname) == 0 ||
-				strcmp(command_table[i].shortcut, cmdname) == 0) {
+				strcmp(command_table[i].alias, cmdname) == 0) {
 				found = 1;
 				command_table[i].handler(arg.we_wordc, arg.we_wordv);
 				goto execute_clean;
