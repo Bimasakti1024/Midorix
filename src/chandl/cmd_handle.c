@@ -20,6 +20,10 @@ void cmdh_cleanup() {
 		cJSON_Delete(PCFG);
 		PCFG = NULL;
 	}
+	if (LPCFG) {
+		lua_close(LPCFG);
+		LPCFG = NULL;
+	}
 }
 
 void cmdh_init_config(cJSON **cfgout, const char *configfn) {
@@ -159,11 +163,14 @@ void cmd_mema(int argc, char **argv) {
 
 // Project manager
 
+// subcommands index forward declaration
+extern Command subcommands[];
+
 // Subfunction
-static void psub_init(void) {
+static void psub_init(int argc, char** argv) {
 	projectutil_init(&PCFG);
 }
-static void psub_deinit(void) {
+static void psub_deinit(int argc, char** argv) {
 	// Safety
 	if (!PCFG) {
 		printf("No project is currently initialized.\n");
@@ -173,10 +180,10 @@ static void psub_deinit(void) {
 	PCFG = NULL;
 	printf("Project deinitialized.\n");
 }
-static void psub_build(void) {
+static void psub_build(int argc, char** argv) {
 	projectutil_build(PCFG);
 }
-static void psub_show(void) {
+static void psub_show(int argc, char** argv) {
 	char *cconfig = cJSON_Print(PCFG);
 	if (cconfig) {
 		puts(cconfig);
@@ -186,9 +193,7 @@ static void psub_show(void) {
 	}
 }
 
-extern noargCommand subcommands[];
-
-static void psub_help(void) {
+static void psub_help(int argc, char** arg) {
 	printf("Available project subcommands:\n"
 		   "  NAME          ALIAS     DESCRIPTION\n");
 	for (int i = 0; subcommands[i].cmd != NULL; i++) {
@@ -197,11 +202,16 @@ static void psub_help(void) {
 	}
 }
 
+static void psub_custom_rule(int argc, char** argv) {
+	projectutil_custom_rule(argv[0], argc, argv);
+}
+
 // subcommands index
-noargCommand subcommands[] = {
+Command subcommands[] = {
 	{"init", "i", psub_init, "Initialize project."},
 	{"deinit", "di", psub_deinit, "Deinitialize project."},
 	{"build", "b", psub_build, "Build initiated project."},
+	{"custom", "c", psub_custom_rule, "Execute a custom rule."},
 	{"show", "s", psub_show, "Show configuration."},
 	{"help", "h", psub_help, "Show help."},
 	{NULL, NULL, NULL, NULL}};
@@ -209,18 +219,20 @@ noargCommand subcommands[] = {
 //  Main function
 void cmd_project(int argc, char **argv) {
 	if (argc < 2) {
-		fprintf(stderr, "No action were provided. Use help action for list of "
+		fprintf(stderr, "No action were provided. Use help subcommands for list of "
 						"subcommands.\n");
 		return;
 	}
 
+	char **rargv = &argv[2];
+
 	for (int i = 0; subcommands[i].cmd != NULL; i++) {
 		if ((strcmp(subcommands[i].cmd, argv[1]) == 0) ||
 			(strcmp(subcommands[i].alias, argv[1]) == 0)) {
-			subcommands[i].handler();
+			subcommands[i].handler(argc - 2, rargv);
 			return;
 		}
 	}
 
-	fprintf(stderr, "Action not recognized.\n");
+	fprintf(stderr, "Subcommand not recognized.\n");
 }

@@ -1,6 +1,8 @@
 #include "projectutil.h"
 #include "../util/util.h"
 
+#define _GNU_SOURCE
+#include <wordexp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +13,7 @@
 #include <lua.h>
 #include <lualib.h>
 
-lua_State *LPCFG;
+lua_State *LPCFG = NULL;
 
 cJSON *luaTable2cJSON(lua_State *L, int index) {
 	if (index < 0)
@@ -206,3 +208,40 @@ void projectutil_build(const cJSON *PCFG) {
 	}
 	printf("Build completed.\n");
 }
+
+void projectutil_custom_rule(const char *rname, int rargc, char **rargv) {
+	if (!LPCFG) {
+		fprintf(stderr, "Configuration is empty.\n");
+		return;
+	}
+
+	// get function
+	lua_getglobal(LPCFG, rname);
+	// check if is a function and exist
+	if (!lua_isfunction(LPCFG, -1)) {
+		fprintf(stderr, "Custom rule not found or not a function.\n");
+		lua_pop(LPCFG, 1);
+		return;
+	}
+
+	// push argc
+	lua_pushinteger(LPCFG, rargc);
+
+	// push argv
+	lua_newtable(LPCFG);
+
+	// push argv content
+	for (int i = 0; i < rargc; i++) {
+		lua_pushinteger(LPCFG, i + 1);
+		lua_pushstring(LPCFG, rargv[i]);
+		lua_settable(LPCFG, -3);
+	}
+
+	// execute
+	if (lua_pcall(LPCFG, 2, 0, 0) != LUA_OK) {
+		fprintf(stderr, "Error encountered when calling %s: %s\n", rname, lua_tostring(LPCFG, -1));
+		lua_pop(LPCFG, 1);
+		return;
+	}
+}
+
