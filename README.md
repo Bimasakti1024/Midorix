@@ -4,14 +4,14 @@
 
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>A simple, stateless, lightweight make-like tool written in C powered by Lua.</em>
+  <em>A simple, stateless, lightweight, make-like tool written in C powered by Lua.</em>
 </p>
 
 ---
 
 ## Introduction
 
-Midorix is a simple, stateless, lightweight, make-like tool made in C. It uses an `mdrxproject.lua` file that acts as a project configuration, the `mdrxproject.lua` is written in Lua, it will contain project information. Midorix can automatically build a project once a `mdrxproject.lua` file has been initiated.
+Midorix is a simple, stateless, lightweight, make-like tool written in C. It uses an `mdrxproject.lua` file that acts as a project configuration, the `mdrxproject.lua` is written in Lua, it will contain project information. Midorix can automatically build a project once a `mdrxproject.lua` file has been initiated.
 
 Midorix is focused on simplicity and extensibility, making it easy for customization and managing projects.
 
