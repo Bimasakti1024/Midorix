@@ -1,0 +1,12 @@
+{
+    "welcome_msg": "Welcome to Midorix!\n",
+    "prompt": "[Midorix]> ",
+    "prefix": ".",
+    "max_history": 100,
+    "editor": "nvim",
+	"executor": "gcc",
+	"debugger": "gdb",
+	"memanalyzer": "valgrind",
+	"autostart": []
+}
+

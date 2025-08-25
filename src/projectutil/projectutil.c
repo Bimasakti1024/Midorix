@@ -2,11 +2,11 @@
 #include "../util/util.h"
 
 #define _GNU_SOURCE
-#include <wordexp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wordexp.h>
 
 #include <cjson/cJSON.h>
 #include <lauxlib.h>
@@ -239,9 +239,9 @@ void projectutil_custom_rule(const char *rname, int rargc, char **rargv) {
 
 	// execute
 	if (lua_pcall(LPCFG, 2, 0, 0) != LUA_OK) {
-		fprintf(stderr, "Error encountered when calling %s: %s\n", rname, lua_tostring(LPCFG, -1));
+		fprintf(stderr, "Error encountered when calling %s: %s\n", rname,
+				lua_tostring(LPCFG, -1));
 		lua_pop(LPCFG, 1);
 		return;
 	}
 }
-

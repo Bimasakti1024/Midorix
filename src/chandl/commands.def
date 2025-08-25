@@ -12,5 +12,5 @@ CMD("exec", "x", cmd_exec, "Execute(compile/interpret).")
 CMD("debug", "d", cmd_debug, "Debug.")
 CMD("memanalyze", "mema", cmd_mema, "Analyze Memory.")
 
-CMD("project", "p", cmd_project, "Project manager.")
+CMD("proman", "pm", cmd_project, "Project manager.")
 

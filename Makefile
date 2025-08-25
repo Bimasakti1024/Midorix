@@ -55,6 +55,16 @@ $(OBJ_PU): $(SRC_PU) $(SRC_UTIL)
 run: all
 	./$(BIN)
 
+# Build target
+build: $(BIN)
+
+# Install target
+install:
+	mkdir -p ~/.config/midorix/custom_command
+	cp assets/config.json ~/.config/midorix/config.json
+	sudo cp build/midorix /usr/local/bin/midorix
+	@echo "Midorix is now installed!"
+
 # Clean
 clean:
 	rm -rf $(BUILD_DIR)/*.o $(BIN)

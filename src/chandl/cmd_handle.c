@@ -167,10 +167,10 @@ void cmd_mema(int argc, char **argv) {
 extern Command subcommands[];
 
 // Subfunction
-static void psub_init(int argc, char** argv) {
+static void psub_init(int argc, char **argv) {
 	projectutil_init(&PCFG);
 }
-static void psub_deinit(int argc, char** argv) {
+static void psub_deinit(int argc, char **argv) {
 	// Safety
 	if (!PCFG) {
 		printf("No project is currently initialized.\n");
@@ -180,10 +180,10 @@ static void psub_deinit(int argc, char** argv) {
 	PCFG = NULL;
 	printf("Project deinitialized.\n");
 }
-static void psub_build(int argc, char** argv) {
+static void psub_build(int argc, char **argv) {
 	projectutil_build(PCFG);
 }
-static void psub_show(int argc, char** argv) {
+static void psub_show(int argc, char **argv) {
 	char *cconfig = cJSON_Print(PCFG);
 	if (cconfig) {
 		puts(cconfig);
@@ -193,7 +193,7 @@ static void psub_show(int argc, char** argv) {
 	}
 }
 
-static void psub_help(int argc, char** arg) {
+static void psub_help(int argc, char **arg) {
 	printf("Available project subcommands:\n"
 		   "  NAME          ALIAS     DESCRIPTION\n");
 	for (int i = 0; subcommands[i].cmd != NULL; i++) {
@@ -202,7 +202,7 @@ static void psub_help(int argc, char** arg) {
 	}
 }
 
-static void psub_custom_rule(int argc, char** argv) {
+static void psub_custom_rule(int argc, char **argv) {
 	projectutil_custom_rule(argv[0], argc, argv);
 }
 
@@ -219,8 +219,10 @@ Command subcommands[] = {
 //  Main function
 void cmd_project(int argc, char **argv) {
 	if (argc < 2) {
-		fprintf(stderr, "No action were provided. Use help subcommands for list of "
-						"subcommands.\n");
+		fprintf(
+			stderr,
+			"No subcommand were provided. Use \"help\" subcommands for list of "
+			"subcommands.\n");
 		return;
 	}
 
