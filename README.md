@@ -25,7 +25,7 @@ Here are some screenshots to give you a feel of how it works:
 • Launch
 <p align=center><img src=assets/images/sample1.png alt="Sample Image 1, Launch." width=700></p>
 • System Call
-<p align-center><img src=assets/images/sample2.png alt="Sample Image 2, System Call." width=400></p>
+<p align=center><img src=assets/images/sample2.png alt="Sample Image 2, System Call." width=400></p>
 • Built-In Command Execution
 <p align=center><img src=assets/images/sample3.png alt="Sample Image 3, Built-In Commands execution." width=500></p>
 
