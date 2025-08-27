@@ -77,7 +77,8 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 
 void projectutil_init(cJSON **PCFGo) {
 	if (chkfexist("mdrxproject.lua")) {
-		fprintf(stderr, "Error: mdrxproject.lua does not exist.\n");
+		fprintf(stderr, "Error: mdrxproject.lua does not exist.\nCannot "
+						"initiate project.\n");
 		return;
 	}
 

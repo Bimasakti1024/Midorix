@@ -3,10 +3,18 @@
     "prompt": "[Midorix]> ",
     "prefix": ".",
     "max_history": 100,
+	"autostart": [],
+	"autoinit_project": true,
+
     "editor": "nvim",
+
 	"executor": "gcc",
+	"executor_arg": "-O2 -Wall",
+
 	"debugger": "gdb",
+	"debugger_arg": "--tui",
+
 	"memanalyzer": "valgrind",
-	"autostart": []
+	"memanalyzer_arg": "--leak-check=full --leak-resolution=med --show-leak-kinds=all"
 }
 

@@ -114,6 +114,14 @@ int main(int argc, char *argv[]) {
 	// Init configuration
 	cmdh_init_config(&config, configfn);
 
+	// Autoinit
+	cJSON *autoinit_project =
+		cJSON_GetObjectItemCaseSensitive(config, "autoinit_project");
+	if (cJSON_IsBool(autoinit_project) && cJSON_IsTrue(autoinit_project) &&
+		!chkfexist("mdrxproject.lua")) {
+		execute(".proman init");
+	}
+
 	// Welcome
 	welcome_msg =
 		strdup(cJSON_GetObjectItem(config, "welcome_msg")->valuestring);

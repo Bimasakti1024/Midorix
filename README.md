@@ -4,6 +4,7 @@
 
 <h1 align="center">Midorix</h1>
 <p align="center">
+  <em>Version 1.0.1-beta</em></br>
   <em>A simple, stateless, lightweight, make-like tool written in C powered by Lua.</em>
 </p>
 
@@ -158,17 +159,22 @@ To configure Midorix, you can edit the configuration file located at ~/.config/m
 
 Here are the full configuration parameters:
 
-| Name        | Data Type | Description                                                  |
-| ----------- | --------- | ------------------------------------------------------------ |
-| welcome_msg | string    | The message to print on launch.                              |
-| prefix      | string    | The prefix to execute custom/built-in commands on Midorix.   |
-| max_history | integer   | Maximum command count to save to history.                    |
-| editor      | string    | Editor for the `edit` command.                               |
-| executor    | string    | "Executor"(supposed to be an interpreter or an compiler) for the `exec` command. |
-| debugger    | string    | Debugger for the `debug` command.                            |
-| memanalyzer | string    | Memory Analyzer(valgrind or  something else) for the `memanalyze` command. |
-| prompt      | string    | Midorix CLI Prompt for commands.                             |
-| autostart   | array     | Auto-start commands.                                         |
+| Name             | Data Type | Description                                                  |
+| ---------------- | --------- | ------------------------------------------------------------ |
+| welcome_msg      | string    | The message to print on launch.                              |
+| prefix           | string    | The prefix to execute custom/built-in commands on Midorix.   |
+| max_history      | integer   | Maximum command count to save to history.                    |
+| editor           | string    | Editor for the `edit` command.                               |
+| executor         | string    | "Executor" (supposed to be an interpreter or an compiler) for the `exec` command. |
+| debugger         | string    | Debugger for the `debug` command.                            |
+| memanalyzer      | string    | Memory Analyzer (valgrind or  something else) for the `memanalyze` command. |
+| editor_arg       | string    | Automated argument for the `editor` command.                 |
+| executor_arg     | string    | Automated argument for the `executor` command.               |
+| debugger_arg     | string    | Automated argument for the `debugger` command.               |
+| memanalyzer_arg  | string    | Automated argument for the `memanalyzer` command.            |
+| prompt           | string    | Midorix CLI Prompt for commands.                             |
+| autostart        | array     | Auto-start commands.                                         |
+| autoinit_project | boolean   | Auto initiate the `mdrxproject.lua` file.                    |
 
 This is the default configuration for Midorix:
 
