@@ -1,12 +1,12 @@
 {
-    "welcome_msg": "Welcome to Midorix!\n",
-    "prompt": "[Midorix]> ",
-    "prefix": ".",
-    "max_history": 100,
+	"welcome_msg": "Welcome to Midorix!\n",
+	"prompt": "[Midorix]> ",
+	"prefix": ".",
+	"max_history": 100,
 	"autostart": [],
 	"autoinit_project": true,
 
-    "editor": "nvim",
+	"editor": "nvim",
 
 	"executor": "gcc",
 	"executor_arg": "-O2 -Wall",

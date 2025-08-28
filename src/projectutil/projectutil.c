@@ -1,7 +1,6 @@
 #include "projectutil.h"
 #include "../util/util.h"
 
-#define _GNU_SOURCE
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,7 +75,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 }
 
 void projectutil_init(cJSON **PCFGo) {
-	if (chkfexist("mdrxproject.lua")) {
+	if (!chkfexist("mdrxproject.lua")) {
 		fprintf(stderr, "Error: mdrxproject.lua does not exist.\nCannot "
 						"initiate project.\n");
 		return;
@@ -129,7 +128,7 @@ void projectutil_init(cJSON **PCFGo) {
 	printf("Project successfully initiated.\n");
 }
 
-void projectutil_build(const cJSON *PCFG) {
+void projectutil_build(const cJSON *PCFG, const char *mode) {
 	// Check if the project is initialized
 	if (!PCFG) {
 		fprintf(stderr, "Project is not initialized.\n");
@@ -151,10 +150,25 @@ void projectutil_build(const cJSON *PCFG) {
 	printf("Building %s %s.\n", pname, pversion);
 
 	// Get some configuration from build_config
+	//  Get language configuration
 	cJSON *langcfg = cJSON_GetObjectItemCaseSensitive(bcfg, "languages");
-	cJSON *target  = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
+
+	//  Get build targets
+	cJSON *target = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
 	if (!target) {
-		printf("No build target found.\n");
+		fprintf(stderr, "No build target found.\n");
+		return;
+	}
+
+	//  Get mode
+	cJSON *modeobj = cJSON_GetObjectItemCaseSensitive(PCFG, "mode");
+	if (!modeobj) {
+		fprintf(stderr, "No mode configuration found.\n");
+		return;
+	}
+	cJSON *smode = cJSON_GetObjectItemCaseSensitive(modeobj, mode);
+	if (!smode) {
+		fprintf(stderr, "Selected mode %s does not exist.\n", mode);
 		return;
 	}
 
@@ -165,26 +179,68 @@ void projectutil_build(const cJSON *PCFG) {
 		if (!item)
 			continue;
 
-		char  *source = cJSON_GetObjectItem(item, "source")->valuestring;
-		char  *lang	  = cJSON_GetObjectItem(item, "language")->valuestring;
-		cJSON *args	  = cJSON_GetObjectItem(item, "args");
-		char  *argsv  = args->valuestring ? args->valuestring : "";
-
-		cJSON *slang	= cJSON_GetObjectItem(langcfg, lang);
-		char  *executor = cJSON_GetObjectItem(slang, "executor")->valuestring;
-		cJSON *flags	= cJSON_GetObjectItem(slang, "flags");
-		char  *flagsv	= flags->valuestring ? flags->valuestring : "";
-
-		if (!source || !lang) {
+		// Get source
+		char *source =
+			cJSON_GetObjectItemCaseSensitive(item, "source")->valuestring;
+		if (!source) {
 			fprintf(stderr,
-					"The target index %d does not have source or a language.\n",
+					"Build target at index %d does not have a source file.\n",
 					i);
-			continue;
+			break;
 		}
 
+		// Get language
+		char *lang =
+			cJSON_GetObjectItemCaseSensitive(item, "language")->valuestring;
+		if (!lang) {
+			fprintf(stderr,
+					"Build target %s does not have language configured.\n",
+					source);
+		}
+
+		// Get action
+		cJSON *taction = cJSON_GetObjectItemCaseSensitive(item, "action");
+		if (!taction) {
+			fprintf(stderr,
+					"Build target %s does not have any action configured.\n",
+					source);
+			break;
+		}
+		char *tactionv = taction->valuestring;
+
+		// Set arguments
+		cJSON *args	 = cJSON_GetObjectItemCaseSensitive(item, "args");
+		char  *argsv = args->valuestring ? args->valuestring : "";
+
+		// Set mode flags
+		cJSON *slmode = cJSON_GetObjectItemCaseSensitive(smode, lang);
+		if (!slmode) {
+			fprintf(stderr, "Language %s is not available for %s build mode.\n",
+					lang, mode);
+			break;
+		}
+
+		cJSON *mflags  = cJSON_GetObjectItemCaseSensitive(slmode, "flags");
+		char  *mflagsv = mflags->valuestring ? mflags->valuestring : "";
+
+		cJSON *slang  = cJSON_GetObjectItemCaseSensitive(langcfg, lang);
+		cJSON *action = cJSON_GetObjectItemCaseSensitive(slang, "action");
+		cJSON *sact	  = cJSON_GetObjectItemCaseSensitive(action, tactionv);
+		if (!sact) {
+			free(argsv);
+			fprintf(stderr, "Build target %s action %s does not exist.\n",
+					source, tactionv);
+			break;
+		}
+
+		char *executor =
+			cJSON_GetObjectItemCaseSensitive(slang, "executor")->valuestring;
+		cJSON *flags  = cJSON_GetObjectItemCaseSensitive(sact, "flags");
+		char  *flagsv = flags->valuestring ? flags->valuestring : "";
+
 		// Declare fcmd variable for the command to execute later
-		int size = strlen(executor) + strlen(argsv) + strlen(flagsv) +
-				   strlen(source) + 4;
+		int size = strlen(executor) + strlen(argsv) + strlen(mflagsv) +
+				   strlen(flagsv) + strlen(source) + 5;
 		char *fcmd = malloc(size);
 		if (!fcmd) {
 			perror("malloc");
@@ -192,7 +248,8 @@ void projectutil_build(const cJSON *PCFG) {
 		}
 
 		// Construct the fcmd
-		snprintf(fcmd, size, "%s %s %s %s", executor, argsv, flagsv, source);
+		snprintf(fcmd, size, "%s %s %s %s %s", executor, argsv, mflagsv, flagsv,
+				 source);
 
 		// fcmd_s for the wordexp_t form of fcmd
 		wordexp_t fcmd_s;
@@ -207,7 +264,6 @@ void projectutil_build(const cJSON *PCFG) {
 		execcmd(fcmd_s.we_wordv);
 		wordfree(&fcmd_s);
 	}
-	printf("Build completed.\n");
 }
 
 void projectutil_custom_rule(const char *rname, int rargc, char **rargv) {

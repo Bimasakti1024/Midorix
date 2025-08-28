@@ -1,5 +1,4 @@
 // src/main.c
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -114,19 +113,6 @@ int main(int argc, char *argv[]) {
 	// Init configuration
 	cmdh_init_config(&config, configfn);
 
-	// Autoinit
-	cJSON *autoinit_project =
-		cJSON_GetObjectItemCaseSensitive(config, "autoinit_project");
-	if (cJSON_IsBool(autoinit_project) && cJSON_IsTrue(autoinit_project) &&
-		!chkfexist("mdrxproject.lua")) {
-		execute(".proman init");
-	}
-
-	// Welcome
-	welcome_msg =
-		strdup(cJSON_GetObjectItem(config, "welcome_msg")->valuestring);
-	printf("%s", welcome_msg);
-
 	// Prompt
 	prompt = strdup(cJSON_GetObjectItem(config, "prompt")->valuestring);
 	if (!prompt) {
@@ -141,6 +127,19 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	prefixlen = strlen(prefix);
+
+	// Autoinit
+	cJSON *autoinit_project =
+		cJSON_GetObjectItemCaseSensitive(config, "autoinit_project");
+	if (cJSON_IsBool(autoinit_project) && cJSON_IsTrue(autoinit_project) &&
+		chkfexist("mdrxproject.lua")) {
+		execute(".proman init");
+	}
+
+	// Welcome
+	welcome_msg =
+		strdup(cJSON_GetObjectItem(config, "welcome_msg")->valuestring);
+	printf("%s", welcome_msg);
 
 	// Set max history
 	linenoiseHistorySetMaxLen(
@@ -216,7 +215,7 @@ void execute(const char *command) {
 		goto execute_clean;
 	}
 
-	if (chkfexist(ccmd)) {
+	if (!chkfexist(ccmd)) {
 		free(ccmd);
 	} else {
 		found = 1;

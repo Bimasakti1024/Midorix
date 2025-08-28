@@ -27,7 +27,7 @@ void cmdh_cleanup() {
 }
 
 void cmdh_init_config(cJSON **cfgout, const char *configfn) {
-	if (chkfexist(configfn) != 0) {
+	if (!chkfexist(configfn)) {
 		fprintf(stderr, "Configuration file %s does not exist.\n", configfn);
 		exit(1);
 	}
@@ -173,7 +173,7 @@ static void psub_init(int argc, char **argv) {
 static void psub_deinit(int argc, char **argv) {
 	// Safety
 	if (!PCFG) {
-		printf("No project is currently initialized.\n");
+		fprintf(stderr, "No project is currently initialized.\n");
 		return;
 	}
 	cJSON_Delete(PCFG);
@@ -181,7 +181,12 @@ static void psub_deinit(int argc, char **argv) {
 	printf("Project deinitialized.\n");
 }
 static void psub_build(int argc, char **argv) {
-	projectutil_build(PCFG);
+	if (argc < 2) {
+		printf("Usage: .proman build MODE");
+		return;
+	}
+
+	projectutil_build(PCFG, argv[1]);
 }
 static void psub_show(int argc, char **argv) {
 	char *cconfig = cJSON_Print(PCFG);
@@ -226,12 +231,12 @@ void cmd_project(int argc, char **argv) {
 		return;
 	}
 
-	char **rargv = &argv[2];
+	char **rargv = &argv[1];
 
 	for (int i = 0; subcommands[i].cmd != NULL; i++) {
 		if ((strcmp(subcommands[i].cmd, argv[1]) == 0) ||
 			(strcmp(subcommands[i].alias, argv[1]) == 0)) {
-			subcommands[i].handler(argc - 2, rargv);
+			subcommands[i].handler(argc - 1, rargv);
 			return;
 		}
 	}

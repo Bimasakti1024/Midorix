@@ -43,7 +43,7 @@ int readjson(const char *jsonf, cJSON **jsonout) {
 }
 
 int chkfexist(const char *filename) {
-	return access(filename, F_OK);
+	return !access(filename, F_OK);
 }
 
 char *append(const char *fstr, const char *sstr) {
