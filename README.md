@@ -1,12 +1,12 @@
 <p align="center">
   <img src="assets/images/Midorix Logo.png" alt="Midorix Logo" width="200"/>
 </p>
-
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.1.0-beta</em></br>
+  <em>Version 1.1.1-beta</em></br>
   <em>A simple, stateless, lightweight, make-like tool written in C powered by Lua.</em>
 </p>
+
 
 ---
 
@@ -94,33 +94,45 @@ To use the project manager you should first add a `mdrxproject.lua` file in your
 project = {
   name = "Hello World!",
   version = "1-Stable",
-  build_config = {
-    languages = {
-      ["C"] = {
-        executor = "gcc",
-        flags = "-Wall -g -O2"
-      }
-    },
-    target = {
-      [1] = {
-        source = "main.c",
-        language = "C",
-        args = "-o HelloWorld",
+  mode = {
+    release = {
+      ["C"] = { flags = "-O2 -s -Wall" }
+      },
+    debug = {
+      ["C"] = { flags = "-O0 -g -Wall -fsanitize=address" }
     }
+  },
+  build_config = {
+	languages = {
+	 ["C"] = {
+		executor = "gcc",
+		action = {
+					["compile"] = {
+						flags = "-O2 -Wall"
+					}
+				}
+		}
+	},
+	target = {
+	 [1] = {
+		source = "main.c",
+		language = "C",
+		action = "compile",
+		args = "-o HelloWorld",
+	}
   }
   },
   run = {
-    source = "HelloWorld"
+	source = "HelloWorld"
   }
 }
 
-function test(argc, argv)
+function a(argc, argv)
 	print(argc)
 	for k,v in ipairs(argv) do
 		print(string.format("%d %s", k, v))
 	end
 end
-
 ```
 
 After that, You can initiate the project by using the `proman`(project manager) command, to initiate project, use this command:
