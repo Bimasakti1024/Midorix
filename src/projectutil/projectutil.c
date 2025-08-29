@@ -81,6 +81,12 @@ void projectutil_init(cJSON **PCFGo) {
 		return;
 	}
 
+	if (*PCFGo) {
+		fprintf(stderr,
+				"Project already initiated, please deinitiate it first.\n");
+		return;
+	}
+
 	printf("Initiating project.\n");
 
 	// Initiate PCFG

@@ -176,13 +176,14 @@ static void psub_deinit(int argc, char **argv) {
 		fprintf(stderr, "No project is currently initialized.\n");
 		return;
 	}
+	// Delete
 	cJSON_Delete(PCFG);
 	PCFG = NULL;
 	printf("Project deinitialized.\n");
 }
 static void psub_build(int argc, char **argv) {
 	if (argc < 2) {
-		printf("Usage: .proman build MODE");
+		printf("Usage: .proman build MODE\n");
 		return;
 	}
 
@@ -208,6 +209,11 @@ static void psub_help(int argc, char **arg) {
 }
 
 static void psub_custom_rule(int argc, char **argv) {
+	if (argc < 1) {
+		printf("No rule were provided.\n");
+		return;
+	}
+
 	projectutil_custom_rule(argv[0], argc, argv);
 }
 
@@ -231,12 +237,12 @@ void cmd_project(int argc, char **argv) {
 		return;
 	}
 
-	char **rargv = &argv[1];
+	char **rargv = &argv[2];
 
 	for (int i = 0; subcommands[i].cmd != NULL; i++) {
 		if ((strcmp(subcommands[i].cmd, argv[1]) == 0) ||
 			(strcmp(subcommands[i].alias, argv[1]) == 0)) {
-			subcommands[i].handler(argc - 1, rargv);
+			subcommands[i].handler(argc - 2, rargv);
 			return;
 		}
 	}

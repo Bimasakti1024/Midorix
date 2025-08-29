@@ -34,7 +34,7 @@ project = {
   }
 }
 
-function a(argc, argv)
+function test(argc, argv)
 	print(argc)
 	for k,v in ipairs(argv) do
 		print(string.format("%d %s", k, v))

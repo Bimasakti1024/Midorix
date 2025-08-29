@@ -3,9 +3,10 @@
 </p>
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.1.1-beta</em></br>
+  <em>Version 1.1.2-beta</em></br>
   <em>A simple, stateless, lightweight, make-like tool written in C powered by Lua.</em>
 </p>
+
 
 
 ---
