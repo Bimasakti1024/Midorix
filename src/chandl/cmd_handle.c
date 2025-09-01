@@ -183,11 +183,11 @@ static void psub_deinit(int argc, char **argv) {
 }
 static void psub_build(int argc, char **argv) {
 	if (argc < 2) {
-		printf("Usage: .proman build MODE\n");
+		printf("Usage: .proman build MODE TARGET\n");
 		return;
 	}
 
-	projectutil_build(PCFG, argv[1]);
+	projectutil_build(PCFG, argv[2], argv[1]);
 }
 static void psub_show(int argc, char **argv) {
 	char *cconfig = cJSON_Print(PCFG);
@@ -237,12 +237,12 @@ void cmd_project(int argc, char **argv) {
 		return;
 	}
 
-	char **rargv = &argv[2];
+	char **rargv = &argv[1];
 
 	for (int i = 0; subcommands[i].cmd != NULL; i++) {
 		if ((strcmp(subcommands[i].cmd, argv[1]) == 0) ||
 			(strcmp(subcommands[i].alias, argv[1]) == 0)) {
-			subcommands[i].handler(argc - 2, rargv);
+			subcommands[i].handler(argc - 1, rargv);
 			return;
 		}
 	}

@@ -3,26 +3,24 @@
 </p>
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.1.2-beta</em></br>
-  <em>A simple, stateless, lightweight, make-like tool written in C powered by Lua.</em>
+  <em>Version 1.2.0-beta</em></br>
+  <em>A simple, stateless, lightweight make-like tool written in C and powered by Lua.</em>
 </p>
-
-
 
 ---
 
 ## Introduction
 
-Midorix is a simple, stateless, lightweight, make-like tool written in C. It uses an `mdrxproject.lua` file that acts as a project configuration, the `mdrxproject.lua` is written in Lua, it will contain project information. Midorix can automatically build a project once a `mdrxproject.lua` file has been initiated.
+Midorix is a simple, stateless, lightweight make-like tool written in C and powered by Lua.
 
-Midorix is focused on simplicity and extensibility, making it easy for customization and managing projects.
+Configure your projects using `mdrxproject.lua` and automate builds, debugging, and execution using Midorix. Midorix is focused on simplicity and extensibility, making it easy for customization and managing projects.
 
-Please note that Midorix is still under development, Bugs may occur, if you find any, please report them to the issue page.
+Please note that Midorix is still under development. Bugs may occur; if you find any, please report them to the issue page.
 
 ### Interface Preview
 
 Midorix provides a minimal yet verbose CLI interface.
-Here are some screenshots to give you a feel of how it works:
+Here are some screenshots to give you an overview of how it works:
 
 • Launch
 <p align=center><img src=assets/images/sample1.png alt="Sample Image 1, Launch." width=700></p>
@@ -47,12 +45,16 @@ To install Midorix, you can follow these steps:
     cd Midorix
     ```
 
-3. Build and Install Midorix. Before building and installing make sure you have [cJSON](https://github.com/DaveGamble/cJSON), [Lua](https://lua.org/), and [linenoise](https://github.com/antirez/linenoise) installed on your build machine. Now you can build and install by running:
+3. Build and Install Midorix. Before building and installing make sure you have [cJSON](https://github.com/DaveGamble/cJSON), [Lua](https://lua.org/), and [linenoise](https://github.com/antirez/linenoise) installed on your build machine.
 
-    ```sh
+   Midorix depends on [cJSON](https://github.com/DaveGamble/cJSON) for configuration parsing, [Lua](https://lua.org/) for customization, and [linenoise](https://github.com/antirez/linenoise) for efficient CLI input handling.
+
+   Now, you can build and install with 1 command:
+
+   ```sh
    sudo make build install
    ```
-   
+
    Now Midorix is installed on your machine!
 
 ---
@@ -67,7 +69,7 @@ To start Midorix, run this command:
 midorix
 ```
 
-Now you are in Midorix CLI, To see the list of available commands, run `.help`. Midorix CLI has a system call fallback, so you don't need to exit and enter again to do a system call.
+Now you are in Midorix CLI. To see the list of available commands, run `.help`. Midorix CLI has a system call fallback, so you don't need to exit and enter again to do a system call.
 
 You can see what configuration is loaded in your Midorix, to see run the `.showcfg` command.
 
@@ -93,47 +95,74 @@ To use the project manager you should first add a `mdrxproject.lua` file in your
 
 ```lua
 project = {
-  name = "Hello World!",
-  version = "1-Stable",
-  mode = {
-    release = {
-      ["C"] = { flags = "-O2 -s -Wall" }
-      },
-    debug = {
-      ["C"] = { flags = "-O0 -g -Wall -fsanitize=address" }
-    }
-  },
-  build_config = {
-	languages = {
-	 ["C"] = {
-		executor = "gcc",
-		action = {
-					["compile"] = {
-						flags = "-O2 -Wall"
-					}
-				}
+	name = "Hello",
+	version = "1-Stable",
+	mode = {
+		-- the mode for build, this allow to give different arguments when build
+		release = {
+			["C"] = { flags = "-O2 -s -Wall" },
+			["Rust"] = { flags = "-O -C opt-level=2 -C overflow-cheks=yes" }
+		},
+		debug = {
+			["C"] = { flags = "-O0 -g -Wall -fsanitize=address" },
+			["Rust"] = { flags = "-C debuginfo=2 -C overflow-checks=yes" }
 		}
 	},
-	target = {
-	 [1] = {
-		source = "main.c",
-		language = "C",
-		action = "compile",
-		args = "-o HelloWorld",
+	-- the build configuration
+	build_config = {
+		-- language index
+		languages = {
+			-- The C Language
+			["C"] = {
+			executor = "gcc",	-- the executor (compiler)
+			action = {
+				["compile"] = {
+					flags = "-O2 -Wall"	-- flags to use when using the "compile" action
+				}
+			}
+			},
+			-- Rust language
+			["Rust"] = {
+			executor = "rustc",
+			action = {
+				["compile"] = {
+					flags = "-C debuginfo=2"
+				}
+			}
+			}
+		},
+		-- build target
+		target = {
+			-- build target HelloC
+			["HelloC"] = {
+				[1] = {
+					source = "main.c",
+					language = "C";
+					action = "compile",
+					args = "-o HelloWorld"
+				}
+			},
+			-- build target HelloRust
+			["HelloRust"] = {
+				[1] = {
+					source = "main.rs",
+					language = "Rust",
+					action = "compile",
+					args = "-o HelloWorld"
+				}
+			}
+		}
 	}
-  }
-  },
-  run = {
-	source = "HelloWorld"
-  }
 }
 
-function a(argc, argv)
-	print(argc)
-	for k,v in ipairs(argv) do
-		print(string.format("%d %s", k, v))
+-- example of custom command (relative to project)
+function list_targets()
+	print("Project Targets:")
+	for target,_ in pairs(project.build_config.target) do
+		print("-", target)
 	end
 end
+
 ```
 
 After that, You can initiate the project by using the `proman`(project manager) command, to initiate project, use this command:
@@ -142,17 +171,32 @@ After that, You can initiate the project by using the `proman`(project manager) 
 >.proman init
 >```
 
-Now your project should be initialized, after that, you can build the project, to build, run `proman build`.
+Now your project should be initialized, after that, you can build the project, to build, run `proman build MODE TARGET`.
 
-Full build flow (assuming the final output file name is `HelloWorld`):
+The mode is used to configures your project build, use `debug` mode for easier debugging and `release` mode for optimized builds. The mode is customizable and you can add your own mode.
+
+The target is the build target (what do you want to build), if the target is empty Midorix will combine all build target automatically, but if not, it will just build the target you selected.
+
+With that configuration, if you want to build `HelloRust` in debug mode you can execute:
+
+>```
+>.proman build debug HelloRust
+>```
+
+Or if you want to build all targets:
+
+> ```
+> .proman build debug
+
+Full release build flow (assuming the final output file name is `HelloC` and the mode is release):
 
 > ```
 > .proman init
-> .proman build
-> ./HelloWorld
+> .proman build release HelloC
+> ./HelloC
 > ```
 
-Even if the prefix is a dot, it won't have conflict with the built-in commands, **as long there is no name conflict**.
+Dot-prefixed commands do not conflict with built-in commands unless the name overlap.
 
 Currently `proman` is in  minimal state but already offers a flexible feature set, You can extend it via custom rules:
 
@@ -160,7 +204,7 @@ Currently `proman` is in  minimal state but already offers a flexible feature se
 >.proman custom <rule name> [arguments]
 >```
 
-you can deinitialize to clean the loaded `mdrxproject.lua` project configuration by executing this command:
+you can deinitialize the loaded `mdrxproject.lua` project configuration by executing this command:
 
 >```
 >.proman deinit
@@ -168,7 +212,7 @@ you can deinitialize to clean the loaded `mdrxproject.lua` project configuration
 
 ### Configuring Midorix
 
-To configure Midorix, you can edit the configuration file located at ~/.config/midorix/. the configuration file name is `config.json`, it uses the JSON format for configuration, currently you cannot reload configuration without relaunching Midorix.
+To configure Midorix, you can edit the configuration file located at `~/.config/midorix/`. the configuration file name is `config.json`, it uses the JSON format for configuration, Currently, the configuration cannot be reloaded without restarting Midorix.
 
 Here are the full configuration parameters:
 
@@ -193,19 +237,27 @@ This is the default configuration for Midorix:
 
 ```json
 {
-    "welcome_msg": "Welcome to Midorix!\n",
-    "prompt": "[Midorix]> ",
-    "prefix": ".",
-    "max_history": 100,
-    "editor": "nvim",
+	"welcome_msg": "Welcome to Midorix!\n",
+	"prompt": "[Midorix]> ",
+	"prefix": ".",
+	"max_history": 100,
+	"autostart": [],
+	"autoinit_project": true,
+
+	"editor": "nvim",
+
 	"executor": "gcc",
+	"executor_arg": "-O2 -Wall",
+
 	"debugger": "gdb",
+	"debugger_arg": "--tui",
+
 	"memanalyzer": "valgrind",
-	"autostart": []
+	"memanalyzer_arg": "--leak-check=full --leak-resolution=med --show-leak-kinds=all"
 }
 ```
 
-
+If you add an irrelevant or unknown parameter in the configuration it will still be loaded but will have no effect.
 
 
 ---
@@ -213,13 +265,13 @@ This is the default configuration for Midorix:
 Midorix uses the following third-party libraries:
 
 1. [cJSON](https://github.com/DaveGamble/cJSON) 
-   Licensed under the MIT License. See [`third_party/cJSON.LICENSE`](third_party/cJSON.LICENSE) for details. Used for configuration.
+   Licensed under the MIT License. See [`third_party/cJSON.LICENSE`](third_party/cJSON.LICENSE) for details.
 
 2. [linenoise](https://github.com/antirez/linenoise) 
-   Licensed under the BSD-2 Clause License. See [`third_party/linenoise.LICENSE`](third_party/linenoise.LICENSE) for details. Used for user input and command history.
+   Licensed under the BSD-2 Clause License. See [`third_party/linenoise.LICENSE`](third_party/linenoise.LICENSE) for details.
 
 3. [Lua](https://lua.org/)
-Licensed under the MIT License. See [`third_party/Lua.LICENSE`](third_party/Lua.LICENSE) for details. Used for configuration, custom rules and custom commands.
+Licensed under the MIT License. See [`third_party/Lua.LICENSE`](third_party/Lua.LICENSE) for details.
 
 ---
 

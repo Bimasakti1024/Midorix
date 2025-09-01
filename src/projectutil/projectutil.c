@@ -18,11 +18,8 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 	if (index < 0)
 		index = lua_gettop(L) + index + 1;
 
-	// If it is not a table
 	if (!lua_istable(L, index)) {
-		fprintf(
-			stderr,
-			"Cannot convert Lua table to JSON because it is not a table.\n");
+		fprintf(stderr, "Cannot convert Lua table to JSON: not a table.\n");
 		return NULL;
 	}
 
@@ -30,11 +27,11 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 	if (!result)
 		return NULL;
 
-	lua_pushnil(L);
+	lua_pushnil(L); // first key
 	while (lua_next(L, index) != 0) {
 		const char *key = NULL;
 
-		// Set the key and value
+		// Convert key to string
 		if (lua_type(L, -2) == LUA_TSTRING) {
 			key = lua_tostring(L, -2);
 		} else if (lua_type(L, -2) == LUA_TNUMBER) {
@@ -42,11 +39,11 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 			snprintf(buf, sizeof(buf), "%lld", (long long)lua_tointeger(L, -2));
 			key = buf;
 		} else {
-			lua_pop(L, 1);
+			lua_pop(L, 1); // skip value
 			continue;
 		}
 
-		// Add the key and value to the result
+		// Handle value types
 		switch (lua_type(L, -1)) {
 			case LUA_TSTRING:
 				cJSON_AddStringToObject(result, key, lua_tostring(L, -1));
@@ -59,18 +56,18 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 				break;
 			case LUA_TTABLE: {
 				cJSON *sub = luaTable2cJSON(L, lua_gettop(L));
-				if (sub) {
+				if (sub)
 					cJSON_AddItemToObject(result, key, sub);
-				}
 				break;
 			}
 			default:
+				// Skip unsupported types
 				break;
 		}
-		lua_pop(L, 1);
+
+		lua_pop(L, 1); // pop value, keep key for next iteration
 	}
 
-	// Return the result
 	return result;
 }
 
@@ -134,7 +131,8 @@ void projectutil_init(cJSON **PCFGo) {
 	printf("Project successfully initiated.\n");
 }
 
-void projectutil_build(const cJSON *PCFG, const char *mode) {
+void projectutil_build(const cJSON *PCFG, const char *btarget,
+					   const char *mode) {
 	// Check if the project is initialized
 	if (!PCFG) {
 		fprintf(stderr, "Project is not initialized.\n");
@@ -162,7 +160,7 @@ void projectutil_build(const cJSON *PCFG, const char *mode) {
 	//  Get build targets
 	cJSON *target = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
 	if (!target) {
-		fprintf(stderr, "No build target found.\n");
+		fprintf(stderr, "No build target index found.\n");
 		return;
 	}
 
@@ -178,10 +176,36 @@ void projectutil_build(const cJSON *PCFG, const char *mode) {
 		return;
 	}
 
-	// Iterate the targets
-	int size = cJSON_GetArraySize(target);
-	for (int i = 0; i < size; i++) {
-		cJSON *item = cJSON_GetArrayItem(target, i);
+	// Set up the target configuration
+	cJSON *targetv = NULL;
+	if (btarget) {
+		targetv = cJSON_GetObjectItemCaseSensitive(target, btarget);
+		if (!targetv) {
+			fprintf(stderr, "Build target %s does not exist.\n", btarget);
+			return;
+		}
+	} else {
+		int isize = cJSON_GetArraySize(target);
+		targetv	  = cJSON_CreateArray();
+
+		// Iterate each target
+		for (int i = 0; i < isize; i++) {
+			cJSON *iitem = cJSON_GetArrayItem(target, i);
+			int	   jsize = cJSON_GetArraySize(iitem);
+
+			// Add all target targets to the targetv array
+			for (int j = 0; j < jsize; j++) {
+				cJSON *jitem  = cJSON_GetArrayItem(iitem, j);
+				cJSON *jitemc = cJSON_Duplicate(jitem, 1);
+				cJSON_AddItemToArray(targetv, jitemc);
+			}
+		}
+	}
+
+	// Iterate the targets and build it
+	int tsize = cJSON_GetArraySize(targetv);
+	for (int i = 0; i < tsize; i++) {
+		cJSON *item = cJSON_GetArrayItem(targetv, i);
 		if (!item)
 			continue;
 
@@ -245,17 +269,17 @@ void projectutil_build(const cJSON *PCFG, const char *mode) {
 		char  *flagsv = flags->valuestring ? flags->valuestring : "";
 
 		// Declare fcmd variable for the command to execute later
-		int size = strlen(executor) + strlen(argsv) + strlen(mflagsv) +
-				   strlen(flagsv) + strlen(source) + 5;
-		char *fcmd = malloc(size);
+		int cmd_size = strlen(executor) + strlen(argsv) + strlen(mflagsv) +
+					   strlen(flagsv) + strlen(source) + 5;
+		char *fcmd = malloc(cmd_size);
 		if (!fcmd) {
 			perror("malloc");
 			continue;
 		}
 
 		// Construct the fcmd
-		snprintf(fcmd, size, "%s %s %s %s %s", executor, argsv, mflagsv, flagsv,
-				 source);
+		snprintf(fcmd, cmd_size, "%s %s %s %s %s", executor, argsv, mflagsv,
+				 flagsv, source);
 
 		// fcmd_s for the wordexp_t form of fcmd
 		wordexp_t fcmd_s;
@@ -266,10 +290,14 @@ void projectutil_build(const cJSON *PCFG, const char *mode) {
 			wordfree(&fcmd_s);
 		}
 
+		printf("Building %s\n", source);
+
 		// Execute
 		execcmd(fcmd_s.we_wordv);
 		wordfree(&fcmd_s);
 	}
+	if (!btarget)
+		cJSON_Delete(targetv);
 }
 
 void projectutil_custom_rule(const char *rname, int rargc, char **rargv) {

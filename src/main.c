@@ -26,8 +26,8 @@ lua_State	 *L = NULL; // For user-defined commands made using LuA
 
 // Cleanup
 void cleanup() {
-	if (config)
-		cJSON_Delete(config);
+	//	if (config)
+	//		cJSON_Delete(config);
 	if (prefix)
 		free(prefix);
 	if (prompt)

@@ -8,7 +8,8 @@
 extern lua_State *LPCFG;
 
 void projectutil_init(cJSON **PCFGo);
-void projectutil_build(const cJSON *PCFG, const char *mode);
+void projectutil_build(const cJSON *PCFG, const char *btarget,
+					   const char *mode);
 void projectutil_custom_rule(const char *rname, int rargc, char **rargv);
 
 #endif
