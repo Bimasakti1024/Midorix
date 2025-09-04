@@ -19,5 +19,6 @@ void cmd_debug(int argc, char **argv);
 void cmd_mema(int argc, char **argv);
 
 void cmd_project(int argc, char **argv);
+void cmd_doctor(int argc, char **argv);
 
 #endif

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -29,7 +30,6 @@ int readjson(const char *jsonf, cJSON **jsonout) {
 	cJSON *parsed = cJSON_Parse(buffer);
 	free(buffer);
 	if (!parsed) {
-		fprintf(stderr, "Failed to parse JSON.\n");
 		return 1;
 	}
 	cJSON *dup = cJSON_Duplicate(parsed, 1);
@@ -68,19 +68,18 @@ int ssplit(const char *input, wordexp_t *dest) {
 	return 0;
 }
 
-void flush_stdin() {
-	int c;
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	return;
+int dir_exist(const char *path) {
+	struct stat st;
+	return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 }
+
 void execcmd(char *argv[]) {
 	for (int i = 0; argv[i] != NULL; i++) {
 		printf("%s", argv[i]);
 		if (argv[i + 1] != NULL)
 			printf(" ");
 	}
-	printf("\n");
+	puts("");
 	pid_t pid = fork();
 
 	if (pid == 0) {
@@ -93,9 +92,9 @@ void execcmd(char *argv[]) {
 		int status;
 		waitpid(pid, &status, 0);
 		if (WIFEXITED(status)) {
-			printf("\nCommand exited with code: %d\n", WEXITSTATUS(status));
+			printf("Command exited with code: %d\n", WEXITSTATUS(status));
 		} else if (WTERMSIG(status)) {
-			printf("\nCommand terminated with signal: %d\n", WTERMSIG(status));
+			printf("Command terminated with signal: %d\n", WTERMSIG(status));
 		}
 	} else {
 		perror("fork");

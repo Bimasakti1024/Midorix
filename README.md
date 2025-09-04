@@ -3,9 +3,10 @@
 </p>
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.2.0-beta</em></br>
+  <em>Version 1.3.0-beta</em></br>
   <em>A simple, stateless, lightweight make-like tool written in C and powered by Lua.</em>
 </p>
+
 
 ---
 
@@ -86,6 +87,7 @@ You will notice that there is an "ALIAS" column in the list of commands, the ali
 | debug      | d     |
 | memanalyze | mema  |
 | proman     | pm    |
+| doctor     | doctr |
 
 This documentation won't use the alias of a command.
 

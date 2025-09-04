@@ -1,10 +1,14 @@
 // src/chandl/cmd_handle.c
 #include "cmd_handle.h"
+#include "../core/core.h"
 #include "../projectutil/projectutil.h"
 #include "../util/util.h"
 #include "chandl.h"
+
 #include <cjson/cJSON.h>
+#include <dirent.h>
 #include <lauxlib.h>
+#include <linux/limits.h>
 #include <lua.h>
 #include <lualib.h>
 #include <stdio.h>
@@ -35,7 +39,8 @@ void cmdh_init_config(cJSON **cfgout, const char *configfn) {
 	printf("[Midorix] Loading configuration file: %s\n", configfn);
 	printf("[Midorix] Parsing configuration.\n");
 
-	if (readjson(configfn, &lconfig) == 1) {
+	if (readjson(configfn, &lconfig)) {
+		fprintf(stderr, "Failed to parse configuration.\n");
 		exit(1);
 	}
 
@@ -164,7 +169,7 @@ void cmd_mema(int argc, char **argv) {
 // Project manager
 
 // subcommands index forward declaration
-extern Command subcommands[];
+extern Command proman_subcommands[];
 
 // Subfunction
 static void psub_init(int argc, char **argv) {
@@ -201,10 +206,10 @@ static void psub_show(int argc, char **argv) {
 
 static void psub_help(int argc, char **arg) {
 	printf("Available project subcommands:\n"
-		   "  NAME          ALIAS     DESCRIPTION\n");
-	for (int i = 0; subcommands[i].cmd != NULL; i++) {
-		printf("  %-10s    %-6s    %s\n", subcommands[i].cmd,
-			   subcommands[i].alias, subcommands[i].desc);
+		   "  NAME          ALIAS          DESCRIPTION\n");
+	for (int i = 0; proman_subcommands[i].cmd != NULL; i++) {
+		printf("  %-10s    %-10s    %s\n", proman_subcommands[i].cmd,
+			   proman_subcommands[i].alias, proman_subcommands[i].desc);
 	}
 }
 
@@ -218,7 +223,7 @@ static void psub_custom_rule(int argc, char **argv) {
 }
 
 // subcommands index
-Command subcommands[] = {
+Command proman_subcommands[] = {
 	{"init", "i", psub_init, "Initialize project."},
 	{"deinit", "di", psub_deinit, "Deinitialize project."},
 	{"build", "b", psub_build, "Build initiated project."},
@@ -239,13 +244,81 @@ void cmd_project(int argc, char **argv) {
 
 	char **rargv = &argv[1];
 
-	for (int i = 0; subcommands[i].cmd != NULL; i++) {
-		if ((strcmp(subcommands[i].cmd, argv[1]) == 0) ||
-			(strcmp(subcommands[i].alias, argv[1]) == 0)) {
-			subcommands[i].handler(argc - 1, rargv);
+	for (int i = 0; proman_subcommands[i].cmd != NULL; i++) {
+		if ((strcmp(proman_subcommands[i].cmd, argv[1]) == 0) ||
+			(strcmp(proman_subcommands[i].alias, argv[1]) == 0)) {
+			proman_subcommands[i].handler(argc - 1, rargv);
 			return;
 		}
 	}
 
 	fprintf(stderr, "Subcommand not recognized.\n");
+}
+
+// Doctor
+void cmd_doctor(int argc, char **argv) {
+	int problemc = 0;
+	int warningc = 0;
+
+	printf("Checking Midorix..\n");
+
+	// Check configuration
+	printf("Checking configuration %s: ", configfn);
+	cJSON *dummy;
+	if (readjson(configfn, &dummy)) {
+		printf("PROBLEM.\n");
+		problemc++;
+	} else {
+		printf("OK.\n");
+	}
+	cJSON_Delete(dummy);
+
+	// Check custom command directory
+	printf("Checking %s existence: ", ccmd_path);
+	if (dir_exist(ccmd_path)) {
+		printf("OK.\n");
+
+		DIR *ccmdr = opendir(ccmd_path);
+		if (ccmdr) {
+			struct dirent *entry;
+
+			while ((entry = readdir(ccmdr)) != NULL) {
+				if (entry->d_name[0] == '.' &&
+					(entry->d_name[1] == '\0' ||
+					 (entry->d_name[1] == '.' && entry->d_name[2] == '\0')))
+					continue;
+
+				lua_State *eL = luaL_newstate();
+				luaL_openlibs(eL);
+
+				char *fccmd_path = append(ccmd_path, "/");
+				char *fullpath	 = append(fccmd_path, entry->d_name);
+				free(fccmd_path);
+				printf("Checking %s: ", fullpath);
+
+				if (luaL_dofile(eL, fullpath)) {
+					printf("PROBLEM\n"
+						   "=======================================\n");
+					fprintf(stderr, "%s\n", lua_tostring(eL, -1));
+					printf("=======================================\n");
+					problemc++;
+					lua_pop(eL, 1);
+				} else {
+					printf("OK\n");
+				}
+				free(fullpath);
+				lua_close(eL);
+			}
+			closedir(ccmdr);
+		} else {
+			perror("opendir");
+			problemc++;
+		}
+	} else {
+		printf("WARNING.\n");
+		warningc++;
+	}
+
+	printf("Problem: %d.\n", problemc);
+	printf("Warning: %d\n", warningc);
 }

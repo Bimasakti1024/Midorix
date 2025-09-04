@@ -21,7 +21,7 @@ int chkfexist(const char *filename); // Check file existence
 char *append(const char *fstr, const char *sstr);
 int	  ssplit(const char *input, wordexp_t *dest);
 
-void flush_stdin(); // Flush stdin
+int dir_exist(const char *path);
 
 void execcmd(char *argv[]); // Execute command in 'The Unix Way'
 
