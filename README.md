@@ -53,7 +53,7 @@ To install Midorix, you can follow these steps:
    Now, you can build and install with 1 command:
 
    ```sh
-   sudo make build install
+   make build install
    ```
 
    Now Midorix is installed on your machine!
