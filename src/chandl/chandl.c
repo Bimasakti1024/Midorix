@@ -1,12 +1,12 @@
 // src/chandl/chandl.c
 #include "chandl.h"
-#define CMD(name, alias, func, desc) void func(int, char **);
+#define MDRX_REGISTER_CMD(name, alias, func, desc) void func(int, char **);
 #include "commands.def"
-#undef CMD
+#undef MDRX_REGISTER_CMD
 
 #include <stddef.h>
 
-#define CMD(name, alias, func, desc) {name, alias, func, desc},
+#define MDRX_REGISTER_CMD(name, alias, func, desc) {name, alias, func, desc},
 Command command_table[] = {
 #include "commands.def"
 	{NULL, NULL, NULL, NULL}};

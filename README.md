@@ -3,9 +3,10 @@
 </p>
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.3.0-beta</em></br>
+  <em>Version 1.4.0-beta</em></br>
   <em>A simple, stateless, lightweight make-like tool written in C and powered by Lua.</em>
 </p>
+
 
 
 ---
@@ -24,11 +25,16 @@ Midorix provides a minimal yet verbose CLI interface.
 Here are some screenshots to give you an overview of how it works:
 
 • Launch
-<p align=center><img src=assets/images/sample1.png alt="Sample Image 1, Launch." width=700></p>
-• System Call
-<p align=center><img src=assets/images/sample2.png alt="Sample Image 2, System Call." width=400></p>
-• Built-In Command Execution
-<p align=center><img src=assets/images/sample3.png alt="Sample Image 3, Built-In Commands execution." width=500></p>
+<p align=center><img src="assets/images/Launch Sample.png" alt="Sample Image 1, Launch." width=700></p>
+
+• Command Execution
+<p align=center><img src="assets/images/Execution Sample.png" alt="Sample Image 2, Command Execution." width=400></p>
+
+<p align=center><img src="assets/images/Execution Sample2.png" alt="Sample Image 3, Another Command Execution." width=500></p>
+
+• Midorix Doctor
+
+<p align=center><img src="assets/images/Midorix Doctor.png" alt="Sample Image 3, Doctor." width=500></p>
 
 ## Installation
 
@@ -261,6 +267,11 @@ This is the default configuration for Midorix:
 
 If you add an irrelevant or unknown parameter in the configuration it will still be loaded but will have no effect.
 
+### Universal Midorix Custom Command
+
+You can create a universal custom command for Midorix. The custom command is written in Lua and stored in the `~/.config/midorix/custom_command` directory. The file name is the custom command name, each script should define a function called `main(argc, argv)` where `argc` is the argument count and `argv` is the argument value.
+
+When called, Midorix will invoke the `main` function with these two parameters.
 
 ---
 ## Third-Party Libraries

@@ -24,6 +24,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 	}
 
 	cJSON *result = cJSON_CreateObject();
+
 	if (!result)
 		return NULL;
 
@@ -36,6 +37,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 			key = lua_tostring(L, -2);
 		} else if (lua_type(L, -2) == LUA_TNUMBER) {
 			static char buf[32];
+
 			snprintf(buf, sizeof(buf), "%lld", (long long)lua_tointeger(L, -2));
 			key = buf;
 		} else {
@@ -56,6 +58,7 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 				break;
 			case LUA_TTABLE: {
 				cJSON *sub = luaTable2cJSON(L, lua_gettop(L));
+
 				if (sub)
 					cJSON_AddItemToObject(result, key, sub);
 				break;
@@ -140,6 +143,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 	}
 	// Get the build_config
 	cJSON *bcfg = cJSON_GetObjectItemCaseSensitive(PCFG, "build_config");
+
 	if (!bcfg) {
 		fprintf(
 			stderr,
@@ -151,6 +155,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 	char *pname = cJSON_GetObjectItemCaseSensitive(PCFG, "name")->valuestring;
 	char *pversion =
 		cJSON_GetObjectItemCaseSensitive(PCFG, "version")->valuestring;
+
 	printf("Building %s %s.\n", pname, pversion);
 
 	// Get some configuration from build_config
@@ -159,6 +164,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 	//  Get build targets
 	cJSON *target = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
+
 	if (!target) {
 		fprintf(stderr, "No build target index found.\n");
 		return;
@@ -166,11 +172,13 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 	//  Get mode
 	cJSON *modeobj = cJSON_GetObjectItemCaseSensitive(PCFG, "mode");
+
 	if (!modeobj) {
 		fprintf(stderr, "No mode configuration found.\n");
 		return;
 	}
 	cJSON *smode = cJSON_GetObjectItemCaseSensitive(modeobj, mode);
+
 	if (!smode) {
 		fprintf(stderr, "Selected mode %s does not exist.\n", mode);
 		return;
@@ -178,6 +186,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 	// Set up the target configuration
 	cJSON *targetv = NULL;
+
 	if (btarget) {
 		targetv = cJSON_GetObjectItemCaseSensitive(target, btarget);
 		if (!targetv) {
@@ -186,7 +195,8 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 		}
 	} else {
 		int isize = cJSON_GetArraySize(target);
-		targetv	  = cJSON_CreateArray();
+
+		targetv = cJSON_CreateArray();
 
 		// Iterate each target
 		for (int i = 0; i < isize; i++) {
@@ -197,6 +207,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 			for (int j = 0; j < jsize; j++) {
 				cJSON *jitem  = cJSON_GetArrayItem(iitem, j);
 				cJSON *jitemc = cJSON_Duplicate(jitem, 1);
+
 				cJSON_AddItemToArray(targetv, jitemc);
 			}
 		}
@@ -204,14 +215,17 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 	// Iterate the targets and build it
 	int tsize = cJSON_GetArraySize(targetv);
+
 	for (int i = 0; i < tsize; i++) {
 		cJSON *item = cJSON_GetArrayItem(targetv, i);
+
 		if (!item)
 			continue;
 
 		// Get source
 		char *source =
 			cJSON_GetObjectItemCaseSensitive(item, "source")->valuestring;
+
 		if (!source) {
 			fprintf(stderr,
 					"Build target at index %d does not have a source file.\n",
@@ -222,6 +236,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 		// Get language
 		char *lang =
 			cJSON_GetObjectItemCaseSensitive(item, "language")->valuestring;
+
 		if (!lang) {
 			fprintf(stderr,
 					"Build target %s does not have language configured.\n",
@@ -230,6 +245,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 		// Get action
 		cJSON *taction = cJSON_GetObjectItemCaseSensitive(item, "action");
+
 		if (!taction) {
 			fprintf(stderr,
 					"Build target %s does not have any action configured.\n",
@@ -244,6 +260,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 		// Set mode flags
 		cJSON *slmode = cJSON_GetObjectItemCaseSensitive(smode, lang);
+
 		if (!slmode) {
 			fprintf(stderr, "Language %s is not available for %s build mode.\n",
 					lang, mode);
@@ -256,6 +273,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 		cJSON *slang  = cJSON_GetObjectItemCaseSensitive(langcfg, lang);
 		cJSON *action = cJSON_GetObjectItemCaseSensitive(slang, "action");
 		cJSON *sact	  = cJSON_GetObjectItemCaseSensitive(action, tactionv);
+
 		if (!sact) {
 			free(argsv);
 			fprintf(stderr, "Build target %s action %s does not exist.\n",
@@ -272,6 +290,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 		int cmd_size = strlen(executor) + strlen(argsv) + strlen(mflagsv) +
 					   strlen(flagsv) + strlen(source) + 5;
 		char *fcmd = malloc(cmd_size);
+
 		if (!fcmd) {
 			perror("malloc");
 			continue;
@@ -283,6 +302,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 		// fcmd_s for the wordexp_t form of fcmd
 		wordexp_t fcmd_s;
+
 		ssplit(fcmd, &fcmd_s);
 		free(fcmd);
 		if (!fcmd_s.we_wordv) {

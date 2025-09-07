@@ -30,4 +30,3 @@ SpaceInEmptyParentheses: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-
