@@ -12,7 +12,7 @@
 #define DEFAULT_PREFIX "."
 #define DEFAULT_WELCOME_MSG "Welcome to Midorix!\n"
 
-//  Colors
+// Colors
 #define RESET "\033[0m"
 #define RED "\033[31m"
 #define GREEN "\033[32m"
@@ -20,10 +20,11 @@
 #define BLUE "\033[34m"
 #define CYAN "\033[36m"
 
-//  Log Tags
+// Log Tags
+#define INFO_TAG "[" CYAN "INFO" RESET "] "
 #define WARN_TAG "[" YELLOW "WARNING" RESET "] "
 #define ERR_TAG "[" RED "ERROR" RESET "] "
-#define INFO_TAG "[" GREEN "INFO" RESET "] "
+#define SUCC_TAG "[" GREEN "SUCCESS" RESET "] "
 
 int readjson(const char *jsonf,
 			 cJSON	   **jsonout); // Parse JSON configuration file

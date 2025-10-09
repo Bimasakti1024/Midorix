@@ -1,0 +1,12 @@
+[package]
+name = "flag_parsr"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "flag_parsr.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+clap = { version = "4.3", features = ["derive"] }
+

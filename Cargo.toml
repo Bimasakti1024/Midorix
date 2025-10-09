@@ -1,0 +1,7 @@
+[workspace]
+members = [
+	"src/flag_parsr",
+	"src/chandl"
+]
+resolver = "3"
+

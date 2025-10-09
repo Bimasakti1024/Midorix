@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -fsanitize=address -fno-omit-frame-pointer -O2 -g -Wall
+CFLAGS = -fno-omit-frame-pointer -O2 -g -Wall
 
 # Paths
 SRC_DIR = src
@@ -11,6 +11,7 @@ CHANDL_DIR = $(SRC_DIR)/chandl
 PU_DIR = $(SRC_DIR)/projectutil
 CORE_DIR = $(SRC_DIR)/core
 ENGINE_DIR = $(SRC_DIR)/engine
+RSLIB_DIR = target/release
 
 # Source files
 SRC_MAIN = $(SRC_DIR)/main.c
@@ -34,60 +35,78 @@ OBJECTS = $(OBJ_MAIN) $(OBJ_UTIL) $(OBJ_CHANDL) $(OBJ_CMDH) $(OBJ_PU) $(OBJ_CORE
 # Output binary
 BIN = $(BUILD_DIR)/midorix
 
-# Default target
-all: $(BIN)
+# Release Build
+release:
+	cargo build --release
+	$(MAKE) $(BIN)
+
+# Make build smaller
+tiny-build: $(BIN)
+	strip $(BIN)
+	upx --best --lzma $(BIN)
+
+# Debug Build
+debug:
+	cargo build
+	$(MAKE) $(BIN) RSLIB_DIR=target/debug CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g -O0"
+
+# Clean Build
+clean:
+	cargo clean
+	rm build/*
 
 # Link step
 $(BIN): $(OBJECTS)
-	$(CC) -o $@ $^ $(CFLAGS) -llinenoise -llua -lm -ldl -lcjson
+	@echo ">> Linking $@"
+	$(CC) -o $@ $^ \
+		$(CFLAGS) \
+		-Wl,-Bstatic -L $(RSLIB_DIR) -lflag_parsr -lrscmd_handle \
+		-Wl,-Bdynamic -llinenoise -llua -lm -ldl -lcjson
 
 # Compile rules
 $(OBJ_MAIN): $(SRC_MAIN)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 $(OBJ_UTIL): $(SRC_UTIL)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 $(OBJ_CHANDL): $(SRC_CHANDL)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS) -lcjson
 
 $(OBJ_CMDH): $(SRC_CMDH)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS) -llua -lm -ldl -lcjson
 
 $(OBJ_PU): $(SRC_PU) $(SRC_UTIL)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS) -llua -lm -ldl -lcjson
 
 $(OBJ_CORE): $(SRC_CORE) $(OBJ_UTIL)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS) -llua -lm -ldl -lcjson
 
 $(OBJ_ENGINE): $(SRC_ENGINE) $(OBJ_UTIL) $(OBJ_CORE)
+	@echo ">> Compiling $<"
 	$(CC) -c $< -o $@ $(CFLAGS) -llinenoise -llua -lm -ldl -lcjson
 
 # Run target
-run: all
+run: $(BIN)
+	@echo ">> Running Midorix..."
 	./$(BIN)
 
-# Build target
-build: $(BIN)
-
-# Install target
-install:
-	mkdir -p ~/.config/midorix/custom_command
-	cp -r assets/default_config/* ~/.config/midorix
-	sudo cp build/midorix /usr/local/bin/midorix
-	@echo "Midorix is now installed!"
-
-# Clean
-clean:
-	rm -rf $(BUILD_DIR)/*.o $(BIN)
-
-# Memory Check
-memcheck: $(BIN)
-	valgrind --leak-check=full --show-leak-kinds=all -s $<
-
-# clang-format
-clang-format:
-	find . -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format -i {} +
-
-.PHONY: all run clean memcheck clang-format
+# Install Midorix
+install: $(BIN)
+	@echo "Installing Midorix..."
+	
+	@echo "Setting up Configuration."
+	@mkdir -p ~/.config/midorix
+	@cp -r assets/default_config/* ~/.config/midorix
+	
+	@echo "Installing Midorix..."
+	@sudo cp $(BIN) /usr/local/bin
+	
+	@echo "Done installing Midorix!"
 

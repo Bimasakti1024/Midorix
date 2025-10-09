@@ -83,10 +83,7 @@ int execute(const char *command) {
 		// Run the custom command (file)
 		if (luaL_dofile(L, ccmd) != LUA_OK) {
 			// Debug print
-			fprintf(stderr,
-					ERR_TAG
-					"Error encountered when loading custom command: %s\n",
-					lua_tostring(L, -1));
+			fprintf(stderr, ERR_TAG "%s\n", lua_tostring(L, -1));
 			lua_pop(L, 1); // Pop the error
 			free(ccmd);
 			exitc = 1;
@@ -113,7 +110,7 @@ int execute(const char *command) {
 		// Push argv
 		// Set a new table for argv
 		lua_newtable(L);
-		for (int i = 0; i < arg.we_wordc; i++) {
+		for (long unsigned int i = 0; i < arg.we_wordc; i++) {
 			lua_pushinteger(L, i + 1); // Set the index number where the
 									   // argument should take place
 			lua_pushstring(L, arg.we_wordv[i]); // Set the argument
@@ -147,6 +144,13 @@ execute_clean:
 int midorix_cli(void) {
 	// Exit Code
 	int exitc = 0;
+
+	// Check if Midorix is already initiated
+	if (!config) {
+		fprintf(stderr, ERR_TAG "Midorix is not initiated! Aborting...\n");
+		exitc = -1;
+		goto cli_exit;
+	}
 
 	// Autoinit_project
 	cJSON *autoinit_project =
@@ -213,7 +217,7 @@ int midorix_cli(void) {
 		if (!input) {
 			fprintf(stderr, ERR_TAG "Input error.\n");
 			exitc = 1;
-			break;
+			goto cli_exit;
 		}
 
 		if (*input) {
@@ -241,5 +245,6 @@ int midorix_cli(void) {
 	}
 
 	// Return
+cli_exit:
 	return exitc;
 }

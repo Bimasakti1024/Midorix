@@ -6,3 +6,8 @@ build/*
 vgcore.*
 core*
 
+
+
+# Added by cargo
+Cargo.lock
+target

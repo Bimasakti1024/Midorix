@@ -1,3 +1,4 @@
+// src/projectutil/projectutil.c
 #include "projectutil.h"
 #include "../util/util.h"
 
@@ -5,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 #include <wordexp.h>
 
 #include <cjson/cJSON.h>
@@ -19,7 +22,8 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 		index = lua_gettop(L) + index + 1;
 
 	if (!lua_istable(L, index)) {
-		fprintf(stderr, "Cannot convert Lua table to JSON: not a table.\n");
+		fprintf(stderr,
+				ERR_TAG "Cannot convert Lua table to JSON: not a table.\n");
 		return NULL;
 	}
 
@@ -76,18 +80,18 @@ cJSON *luaTable2cJSON(lua_State *L, int index) {
 
 void projectutil_init(cJSON **PCFGo) {
 	if (!chkfexist("mdrxproject.lua")) {
-		fprintf(stderr, "Error: mdrxproject.lua does not exist.\nCannot "
-						"initiate project.\n");
+		fprintf(stderr, ERR_TAG "mdrxproject.lua does not exist.\nCannot "
+								"initiate project.\n");
 		return;
 	}
 
 	if (*PCFGo) {
-		fprintf(stderr,
+		fprintf(stderr, WARN_TAG
 				"Project already initiated, please deinitiate it first.\n");
 		return;
 	}
 
-	printf("Initiating project.\n");
+	printf(INFO_TAG "Initiating project.\n");
 
 	// Initiate PCFG
 	cJSON *PCFG = cJSON_CreateObject();
@@ -99,7 +103,7 @@ void projectutil_init(cJSON **PCFGo) {
 	}
 	LPCFG = luaL_newstate();
 	if (!LPCFG) {
-		fprintf(stderr, "Failed to initialize Lua.\n");
+		fprintf(stderr, ERR_TAG "Failed to initialize Lua.\n");
 		return;
 	}
 	luaL_openlibs(LPCFG);
@@ -124,21 +128,21 @@ void projectutil_init(cJSON **PCFGo) {
 	// Convert Lua to JSON
 	PCFG = luaTable2cJSON(LPCFG, -1);
 	if (!PCFG) {
-		fprintf(stderr, "Failed to convert Lua table to JSON.\n");
+		fprintf(stderr, ERR_TAG "Failed to convert Lua table to JSON.\n");
 		lua_close(LPCFG);
 		LPCFG = NULL;
 		return;
 	}
 
 	*PCFGo = PCFG;
-	printf("Project successfully initiated.\n");
+	printf(SUCC_TAG "Project successfully initiated.\n");
 }
 
-void projectutil_build(const cJSON *PCFG, const char *btarget,
-					   const char *mode) {
+void projectutil_build(const cJSON *PCFG, const char *btarget, const char *mode,
+					   int skipTimestamp) {
 	// Check if the project is initialized
 	if (!PCFG) {
-		fprintf(stderr, "Project is not initialized.\n");
+		fprintf(stderr, ERR_TAG "Project is not initialized.\n");
 		return;
 	}
 	// Get the build_config
@@ -146,7 +150,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 	if (!bcfg) {
 		fprintf(
-			stderr,
+			stderr, ERR_TAG
 			"build_config object in project configuration does not exist.\n");
 		return;
 	}
@@ -156,7 +160,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 	char *pversion =
 		cJSON_GetObjectItemCaseSensitive(PCFG, "version")->valuestring;
 
-	printf("Building %s %s.\n", pname, pversion);
+	printf(INFO_TAG "Building %s %s.\n", pname, pversion);
 
 	// Get some configuration from build_config
 	//  Get language configuration
@@ -174,13 +178,13 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 	cJSON *modeobj = cJSON_GetObjectItemCaseSensitive(PCFG, "mode");
 
 	if (!modeobj) {
-		fprintf(stderr, "No mode configuration found.\n");
+		fprintf(stderr, ERR_TAG "No mode configuration found.\n");
 		return;
 	}
 	cJSON *smode = cJSON_GetObjectItemCaseSensitive(modeobj, mode);
 
 	if (!smode) {
-		fprintf(stderr, "Selected mode %s does not exist.\n", mode);
+		fprintf(stderr, ERR_TAG "Selected mode %s does not exist.\n", mode);
 		return;
 	}
 
@@ -190,7 +194,8 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 	if (btarget) {
 		targetv = cJSON_GetObjectItemCaseSensitive(target, btarget);
 		if (!targetv) {
-			fprintf(stderr, "Build target %s does not exist.\n", btarget);
+			fprintf(stderr, ERR_TAG "Build target %s does not exist.\n",
+					btarget);
 			return;
 		}
 	} else {
@@ -216,21 +221,65 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 	// Iterate the targets and build it
 	int tsize = cJSON_GetArraySize(targetv);
 
+	// Get the time from start
+	struct timeval tstart;
+	gettimeofday(&tstart, NULL);
+	double buildStart =
+		(double)tstart.tv_sec + (double)tstart.tv_usec / 1000000.0;
+
+	// Build Iteration
 	for (int i = 0; i < tsize; i++) {
+		// Get build target
 		cJSON *item = cJSON_GetArrayItem(targetv, i);
 
 		if (!item)
 			continue;
 
 		// Get source
-		char *source =
-			cJSON_GetObjectItemCaseSensitive(item, "source")->valuestring;
+		cJSON *sourcej = cJSON_GetObjectItemCaseSensitive(item, "source");
 
-		if (!source) {
+		if (!sourcej) {
 			fprintf(stderr,
+					ERR_TAG
 					"Build target at index %d does not have a source file.\n",
 					i);
 			break;
+		}
+		char *source = sourcej->valuestring;
+
+		// Get output
+		cJSON *outputj = cJSON_GetObjectItemCaseSensitive(item, "output");
+
+		char *output;
+
+		if (!outputj) {
+			fprintf(stderr,
+					WARN_TAG "Build target %s did not provide the output file "
+							 "name, Skipping timestamp check.\n",
+					source);
+		} else {
+			output = outputj->valuestring;
+			if (chkfexist(output) && chkfexist(source)) {
+				// Timestamp check
+				struct stat ost, sst;
+
+				// Stat output file
+				if (stat(output, &ost) != 0) {
+					perror("stat");
+					continue;
+				}
+
+				// Stat source file
+				if (stat(source, &sst) != 0) {
+					perror("stat");
+					continue;
+				}
+
+				if (sst.st_mtim.tv_sec < ost.st_mtim.tv_sec) {
+					printf(INFO_TAG "Skipping %s build.\n", source);
+					continue;
+				}
+			}
 		}
 
 		// Get language
@@ -239,6 +288,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 		if (!lang) {
 			fprintf(stderr,
+					ERR_TAG
 					"Build target %s does not have language configured.\n",
 					source);
 		}
@@ -248,6 +298,7 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 		if (!taction) {
 			fprintf(stderr,
+					ERR_TAG
 					"Build target %s does not have any action configured.\n",
 					source);
 			break;
@@ -262,7 +313,8 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 		cJSON *slmode = cJSON_GetObjectItemCaseSensitive(smode, lang);
 
 		if (!slmode) {
-			fprintf(stderr, "Language %s is not available for %s build mode.\n",
+			fprintf(stderr,
+					ERR_TAG "Language %s is not available for %s build mode.\n",
 					lang, mode);
 			break;
 		}
@@ -276,7 +328,8 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 
 		if (!sact) {
 			free(argsv);
-			fprintf(stderr, "Build target %s action %s does not exist.\n",
+			fprintf(stderr,
+					ERR_TAG "Build target %s action %s does not exist.\n",
 					source, tactionv);
 			break;
 		}
@@ -310,19 +363,26 @@ void projectutil_build(const cJSON *PCFG, const char *btarget,
 			wordfree(&fcmd_s);
 		}
 
-		printf("Building %s\n", source);
+		printf(INFO_TAG "Building %s\n", source);
 
 		// Execute
 		execcmd(fcmd_s.we_wordv);
 		wordfree(&fcmd_s);
+
+		printf(SUCC_TAG "Successfully build target %s.\n", source);
 	}
+
+	gettimeofday(&tstart, NULL);
+	printf(INFO_TAG "Build finished in %.3f second.\n",
+		   ((double)tstart.tv_sec + (double)tstart.tv_usec / 1000000.0) -
+			   buildStart);
 	if (!btarget)
 		cJSON_Delete(targetv);
 }
 
 void projectutil_custom_rule(const char *rname, int rargc, char **rargv) {
 	if (!LPCFG) {
-		fprintf(stderr, "Configuration is empty.\n");
+		fprintf(stderr, ERR_TAG "Configuration is empty.\n");
 		return;
 	}
 
@@ -330,28 +390,8 @@ void projectutil_custom_rule(const char *rname, int rargc, char **rargv) {
 	lua_getglobal(LPCFG, rname);
 	// check if is a function and exist
 	if (!lua_isfunction(LPCFG, -1)) {
-		fprintf(stderr, "Custom rule not found or not a function.\n");
-		lua_pop(LPCFG, 1);
-		return;
-	}
-
-	// push argc
-	lua_pushinteger(LPCFG, rargc);
-
-	// push argv
-	lua_newtable(LPCFG);
-
-	// push argv content
-	for (int i = 0; i < rargc; i++) {
-		lua_pushinteger(LPCFG, i + 1);
-		lua_pushstring(LPCFG, rargv[i]);
-		lua_settable(LPCFG, -3);
-	}
-
-	// execute
-	if (lua_pcall(LPCFG, 2, 0, 0) != LUA_OK) {
-		fprintf(stderr, "Error encountered when calling %s: %s\n", rname,
-				lua_tostring(LPCFG, -1));
+		fprintf(stderr, ERR_TAG "Error encountered when calling %s: %s\n",
+				rname, lua_tostring(LPCFG, -1));
 		lua_pop(LPCFG, 1);
 		return;
 	}

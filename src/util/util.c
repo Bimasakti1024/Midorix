@@ -199,15 +199,6 @@ int dir_exist(const char *path) {
 
 // Execute a command
 void execcmd(char *argv[]) {
-	// Print the command
-	for (int i = 0; argv[i] != NULL; i++) {
-		printf("%s", argv[i]);
-		if (argv[i + 1] != NULL)
-			printf(" ");
-	}
-
-	puts("");
-
 	// Fork
 	pid_t pid = fork();
 
@@ -226,9 +217,11 @@ void execcmd(char *argv[]) {
 
 		// Print the exit code or terminate signal
 		if (WIFEXITED(status)) {
-			printf("Command exited with code: %d\n", WEXITSTATUS(status));
+			printf(INFO_TAG "Command exited with code: %d\n",
+				   WEXITSTATUS(status));
 		} else if (WTERMSIG(status)) {
-			printf("Command terminated with signal: %d\n", WTERMSIG(status));
+			printf(INFO_TAG "Command terminated with signal: %d\n",
+				   WTERMSIG(status));
 		}
 	} else {
 		perror("fork");

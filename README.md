@@ -3,9 +3,11 @@
 </p>
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.4.0-beta</em></br>
-  <em>A simple, stateless, lightweight make-like tool written in C and powered by Lua.</em>
+  <em>Version 1.5.0-beta</em></br>
+  <em>A simple, stateless, lightweight make-like tool written in C and Rust, and powered by Lua.</em>
 </p>
+
+
 
 
 
@@ -13,7 +15,7 @@
 
 ## Introduction
 
-Midorix is a simple, stateless, lightweight make-like tool written in C and powered by Lua.
+Midorix is a simple, stateless, lightweight make-like tool written in C and Rust, and powered by Lua.
 
 Configure your projects using `mdrxproject.lua` and automate builds, debugging, and execution using Midorix. Midorix is focused on simplicity and extensibility, making it easy for customization and managing projects.
 
@@ -76,6 +78,12 @@ To start Midorix, run this command:
 midorix
 ```
 
+That command will start Midorix, but if you want to enter the Midorix CLI, run this command:
+
+``` sh
+midorix -c
+```
+
 Now you are in Midorix CLI. To see the list of available commands, run `.help`. Midorix CLI has a system call fallback, so you don't need to exit and enter again to do a system call.
 
 You can see what configuration is loaded in your Midorix, to see run the `.showcfg` command.
@@ -94,8 +102,9 @@ You will notice that there is an "ALIAS" column in the list of commands, the ali
 | memanalyze | mema  |
 | proman     | pm    |
 | doctor     | doctr |
+| shortcut   | s     |
 
-This documentation won't use the alias of a command.
+For more detail about the commands, [`click here`](docs/command.md).
 
 #### Using the project manager
 
@@ -222,7 +231,7 @@ you can deinitialize the loaded `mdrxproject.lua` project configuration by execu
 
 To configure Midorix, you can edit the configuration file located at `~/.config/midorix/`. the configuration file name is `config.json`, it uses the JSON format for configuration, Currently, the configuration cannot be reloaded without restarting Midorix.
 
-Here are the full configuration parameters:
+Here are the full configuration fields:
 
 | Name             | Data Type | Description                                                  |
 | ---------------- | --------- | ------------------------------------------------------------ |

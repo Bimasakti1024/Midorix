@@ -52,7 +52,8 @@ project = {
 					source = "main.rs",
 					language = "Rust",
 					action = "compile",
-					args = "-o HelloRust"
+					args = "-o HelloRust",
+					output = "HelloRust"
 				}
 			}
 		}

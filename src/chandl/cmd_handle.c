@@ -17,6 +17,10 @@
 #include <unistd.h>
 #include <wordexp.h>
 
+#define OK_DMSG GREEN "OK.\n" RESET
+#define PROBLEM_DMSG RED "PROBLEM.\n" RESET
+#define WARN_DMSG YELLOW "WARNING\n" RESET
+
 static cJSON *lconfig;
 static cJSON *PCFG;
 
@@ -33,12 +37,12 @@ void cmdh_cleanup(void) {
 
 void cmdh_init_config(cJSON **cfgout, const char *configfn) {
 	if (!chkfexist(configfn)) {
-		fprintf(stderr, "Configuration file %s does not exist.\n", configfn);
+		fprintf(stderr, ERR_TAG "Configuration file %s does not exist.\n",
+				configfn);
 		exit(1);
 	}
 
-	printf(INFO_TAG "Loading configuration file: %s\n", configfn);
-	printf(INFO_TAG "Parsing configuration.\n");
+	printf(INFO_TAG "Parsing configuration: %s\n", configfn);
 
 	if (readjson(configfn, &lconfig)) {
 		fprintf(stderr, ERR_TAG "Failed to parse configuration.\n");
@@ -48,10 +52,14 @@ void cmdh_init_config(cJSON **cfgout, const char *configfn) {
 	*cfgout = lconfig;
 
 	atexit(cmdh_cleanup);
-	printf(INFO_TAG "Loaded configuration.\n");
+	printf(SUCC_TAG "Loaded configuration.\n");
 }
 
 void cmdh_run(int argc, char **argv, const char *key) {
+	fprintf(stderr,
+			WARN_TAG
+			"%s command is deprecated, use the shortcut command instead.\n",
+			key);
 	cJSON *kval = cJSON_GetObjectItem(lconfig, key);
 
 	if (!kval || !kval->valuestring) {
@@ -188,21 +196,22 @@ static void psub_init(int argc, char **argv) {
 static void psub_deinit(int argc, char **argv) {
 	// Safety
 	if (!PCFG) {
-		fprintf(stderr, "No project is currently initialized.\n");
+		fprintf(stderr, ERR_TAG "No project is currently initialized.\n");
 		return;
 	}
 	// Delete
 	cJSON_Delete(PCFG);
 	PCFG = NULL;
-	printf("Project deinitialized.\n");
+	printf(SUCC_TAG "Project deinitialized.\n");
 }
 static void psub_build(int argc, char **argv) {
 	if (argc < 2) {
-		printf("Usage: .proman build MODE TARGET\n");
+		printf("Usage: .proman build MODE TARGET [SKIP_TIMESTAMP]\n");
 		return;
 	}
 
-	projectutil_build(PCFG, argv[2], argv[1]);
+	int skipTimestamp = argv[3] ? 1 : 0;
+	projectutil_build(PCFG, argv[2], argv[1], skipTimestamp);
 }
 static void psub_show(int argc, char **argv) {
 	char *cconfig = cJSON_Print(PCFG);
@@ -211,13 +220,13 @@ static void psub_show(int argc, char **argv) {
 		puts(cconfig);
 		free(cconfig);
 	} else {
-		fprintf(stderr, "Configuration is empty.\n");
+		fprintf(stderr, ERR_TAG "Configuration is empty.\n");
 	}
 }
 
 static void psub_help(int argc, char **arg) {
 	printf("Available project subcommands:\n"
-		   "  NAME          ALIAS          DESCRIPTION\n");
+		   "  NAME          ALIAS           DESCRIPTION\n");
 	for (int i = 0; proman_subcommands[i].cmd != NULL; i++) {
 		printf("  %-10s    %-10s    %s\n", proman_subcommands[i].cmd,
 			   proman_subcommands[i].alias, proman_subcommands[i].desc);
@@ -226,7 +235,7 @@ static void psub_help(int argc, char **arg) {
 
 static void psub_custom_rule(int argc, char **argv) {
 	if (argc < 1) {
-		printf("No rule were provided.\n");
+		printf(ERR_TAG "No rule were provided.\n");
 		return;
 	}
 
@@ -262,7 +271,7 @@ void cmd_project(int argc, char **argv) {
 		}
 	}
 
-	fprintf(stderr, "Subcommand not recognized.\n");
+	fprintf(stderr, ERR_TAG "Subcommand not recognized.\n");
 }
 
 // Doctor
@@ -279,21 +288,21 @@ void cmd_doctor(int argc, char **argv) {
 		testc++;
 		printf("Checking if %s exist: ", configfn);
 		if (chkfexist(configfn)) {
-			printf(GREEN "OK.\n" RESET);
+			printf(OK_DMSG);
 
 			testc++;
 			printf("Checking configuration if %s can be parsed: ", configfn);
 			cJSON *dummy;
 
 			if (readjson(configfn, &dummy)) {
-				printf(RED "PROBLEM" RESET ": Cannot parse configuration.\n");
+				printf(PROBLEM_DMSG ": Cannot parse configuration.\n");
 				problemc++;
 			} else {
-				printf(GREEN "OK.\n" RESET);
+				printf(OK_DMSG);
 			}
 			cJSON_Delete(dummy);
 		} else {
-			printf(RED "PROBLEM.\n" RESET);
+			printf(PROBLEM_DMSG);
 			problemc++;
 		}
 	} else {
@@ -311,10 +320,10 @@ void cmd_doctor(int argc, char **argv) {
 		cJSON *bcfg = cJSON_GetObjectItemCaseSensitive(PCFG, "build_config");
 
 		if (!bcfg) {
-			printf(RED "PROBLEM.\n" RESET);
+			printf(PROBLEM_DMSG);
 			problemc++;
 		} else {
-			printf(GREEN "OK.\n" RESET);
+			printf(OK_DMSG);
 
 			testc++;
 			// Check languages object
@@ -322,10 +331,10 @@ void cmd_doctor(int argc, char **argv) {
 			cJSON *lang = cJSON_GetObjectItemCaseSensitive(bcfg, "languages");
 
 			if (!lang) {
-				printf(RED "PROBLEM.\n" RESET);
+				printf(PROBLEM_DMSG);
 				problemc++;
 			} else {
-				printf(GREEN "OK.\n" RESET);
+				printf(OK_DMSG);
 
 				// Iterate each language
 				cJSON *inlang = NULL;
@@ -337,11 +346,10 @@ void cmd_doctor(int argc, char **argv) {
 					cJSON *executor =
 						cJSON_GetObjectItemCaseSensitive(inlang, "executor");
 					if (!executor) {
-						printf(RED "PROBLEM" RESET
-								   ": Executor does not exist.\n");
+						printf(PROBLEM_DMSG ": Executor does not exist.\n");
 						problemc++;
 					} else {
-						printf(GREEN "OK.\n" RESET);
+						printf(OK_DMSG);
 
 						testc++;
 						// Check if executor can be found in path
@@ -349,9 +357,9 @@ void cmd_doctor(int argc, char **argv) {
 							   "be executed: ",
 							   executor->valuestring);
 						if (chkbin(executor->valuestring)) {
-							printf(GREEN "OK.\n" RESET);
+							printf(OK_DMSG);
 						} else {
-							printf(RED "PROBLEM.\n" RESET);
+							printf(PROBLEM_DMSG);
 							problemc++;
 						}
 					}
@@ -364,10 +372,10 @@ void cmd_doctor(int argc, char **argv) {
 			cJSON *target = cJSON_GetObjectItemCaseSensitive(bcfg, "target");
 
 			if (!target) {
-				printf(RED "PROBLEM.\n" RESET);
+				printf(PROBLEM_DMSG);
 				problemc++;
 			} else {
-				printf(GREEN "OK.\n" RESET);
+				printf(OK_DMSG);
 
 				// Check target health
 				cJSON *starget = NULL;
@@ -387,11 +395,10 @@ void cmd_doctor(int argc, char **argv) {
 							cJSON_GetObjectItemCaseSensitive(jtarget, "source");
 
 						if (!source) {
-							printf(RED "PROBLEM" RESET
-									   ": Source does not exist.\n");
+							printf(PROBLEM_DMSG ": Source does not exist.\n");
 							problemc++;
 						} else {
-							printf(GREEN "OK.\n" RESET);
+							printf(OK_DMSG);
 
 							// Check source
 							// existence
@@ -399,10 +406,10 @@ void cmd_doctor(int argc, char **argv) {
 							printf("		Checking source %s existence: ",
 								   source->valuestring);
 							if (!chkfexist(source->valuestring)) {
-								printf(RED "PROBLEM.\n" RESET);
+								printf(PROBLEM_DMSG);
 								problemc++;
 							} else {
-								printf(GREEN "OK.\n" RESET);
+								printf(OK_DMSG);
 							}
 
 							// Check if source is
@@ -411,9 +418,9 @@ void cmd_doctor(int argc, char **argv) {
 							printf("		Checking source %s readability: ",
 								   source->valuestring);
 							if (access(source->valuestring, R_OK) == 0) {
-								printf(GREEN "OK.\n" RESET);
+								printf(OK_DMSG);
 							} else {
-								printf(RED "PROBLEM.\n" RESET);
+								printf(PROBLEM_DMSG);
 								problemc++;
 							}
 						}
@@ -425,11 +432,10 @@ void cmd_doctor(int argc, char **argv) {
 							jtarget, "language");
 
 						if (!tlang) {
-							printf(RED "PROBLEM" RESET
-									   ": Language not found.\n");
+							printf(PROBLEM_DMSG ": Language not found.\n");
 							problemc++;
 						} else {
-							printf(GREEN "OK.\n" RESET);
+							printf(OK_DMSG);
 							if (lang) {
 								testc++;
 								printf("			Checking language %s "
@@ -440,9 +446,9 @@ void cmd_doctor(int argc, char **argv) {
 										lang, tlang->valuestring);
 
 								if (stlang) {
-									printf(GREEN "OK.\n" RESET);
+									printf(OK_DMSG);
 								} else {
-									printf(RED "PROBLEM.\n" RESET);
+									printf(PROBLEM_DMSG);
 									problemc++;
 								}
 							}
@@ -459,10 +465,10 @@ void cmd_doctor(int argc, char **argv) {
 		cJSON *mode = cJSON_GetObjectItemCaseSensitive(PCFG, "mode");
 
 		if (!mode) {
-			printf(RED "PROBLEM.\n" RESET);
+			printf(PROBLEM_DMSG);
 			problemc++;
 		} else {
-			printf(GREEN "OK.\n" RESET);
+			printf(OK_DMSG);
 		}
 	} else {
 		printf(INFO_TAG
@@ -476,7 +482,7 @@ void cmd_doctor(int argc, char **argv) {
 		printf("\n======== Custom Command Check ========\n");
 		printf("Checking %s existence: ", ccmd_path);
 		if (dir_exist(ccmd_path)) {
-			printf(GREEN "OK.\n" RESET);
+			printf(OK_DMSG);
 
 			DIR *ccmdr = opendir(ccmd_path);
 
@@ -504,14 +510,15 @@ void cmd_doctor(int argc, char **argv) {
 					int syntaxCorrect = 0;
 
 					if (luaL_dofile(eL, fullpath)) {
-						printf(RED "PROBLEM" RESET "\n"
-								   "=======================================\n");
+						printf(PROBLEM_DMSG
+							   "\n"
+							   "=======================================\n");
 						fprintf(stderr, "%s\n", lua_tostring(eL, -1));
 						printf("=======================================\n");
 						problemc++;
 					} else {
 						syntaxCorrect = 1;
-						printf(GREEN "OK.\n" RESET);
+						printf(OK_DMSG);
 					}
 
 					// Check if executable by Midorix
@@ -521,13 +528,13 @@ void cmd_doctor(int argc, char **argv) {
 							   entry->d_name);
 						lua_getglobal(eL, "main");
 						if (!lua_isfunction(eL, -1)) {
-							printf(YELLOW "WARNING" RESET
-										  ": %s cannot be executed by Midorix "
-										  "as a custom command.\n",
+							printf(WARN_DMSG
+								   ": %s cannot be executed by Midorix "
+								   "as a custom command.\n",
 								   fullpath);
 							warningc++;
 						} else {
-							printf(GREEN "OK.\n" RESET);
+							printf(OK_DMSG);
 						}
 					}
 
@@ -541,8 +548,7 @@ void cmd_doctor(int argc, char **argv) {
 				problemc++;
 			}
 		} else {
-			printf(YELLOW "WARNING" RESET ": %s directory does not exist.\n",
-				   ccmd_path);
+			printf(WARN_DMSG ": %s directory does not exist.\n", ccmd_path);
 			warningc++;
 		}
 	} else {

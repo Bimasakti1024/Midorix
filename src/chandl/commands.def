@@ -1,6 +1,4 @@
 // src/chandl/commands.def
-#include "cmd_handle.h"
-
 MDRX_REGISTER_CMD("helloWorld", "hw", cmd_helloWorld, "Say \"Hello, World.\"")
 
 MDRX_REGISTER_CMD("help", "h", cmd_help, "Show command list.")
@@ -8,9 +6,12 @@ MDRX_REGISTER_CMD("showcfg", "scfg", cmd_scfg, "Show loaded configuration.")
 MDRX_REGISTER_CMD("quit", "q", cmd_quit, "Quit Midorix.")
 
 MDRX_REGISTER_CMD("edit", "e", cmd_edit, "Edit File.")
-MDRX_REGISTER_CMD("exec", "x", cmd_exec, "Execute(compile/interpret).")
+MDRX_REGISTER_CMD("exec", "x", cmd_exec, "Execute (compile/interpret).")
 MDRX_REGISTER_CMD("debug", "d", cmd_debug, "Debug.")
 MDRX_REGISTER_CMD("memanalyze", "mema", cmd_mema, "Analyze Memory.")
 
 MDRX_REGISTER_CMD("doctor", "doctr", cmd_doctor, "Check Midorix health.")
 MDRX_REGISTER_CMD("proman", "pm", cmd_project, "Project manager.")
+
+MDRX_REGISTER_CMD("shortcut", "s", cmd_shortcut, "Manage command shortcuts")
+

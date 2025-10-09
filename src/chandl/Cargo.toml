@@ -1,0 +1,16 @@
+[package]
+name = "rscmd_handle"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "rscmd_handle.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[build-dependencies]
+cc = "1.0"
+
