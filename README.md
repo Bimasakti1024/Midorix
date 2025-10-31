@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Midorix</h1>
 <p align="center">
-  <em>Version 1.5.0-beta</em></br>
+  <em>Version 1.5.1-beta</em></br>
   <em>A simple, stateless, lightweight make-like tool written in C and Rust, and powered by Lua.</em>
 </p>
 
