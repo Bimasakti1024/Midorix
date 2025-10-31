@@ -7,10 +7,6 @@
   <em>A simple, stateless, lightweight make-like tool written in C and Rust, and powered by Lua.</em>
 </p>
 
-
-this project is no longer maintained.
-
-
 ---
 
 ## Introduction

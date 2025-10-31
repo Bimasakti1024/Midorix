@@ -4,7 +4,6 @@ build/*
 
 # Ignore all Core Dump
 vgcore.*
-core*
 
 
 

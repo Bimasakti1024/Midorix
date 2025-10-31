@@ -84,7 +84,7 @@ fn own_c_argv(argc: c_int, argv: *const *const c_char) -> Vec<String> {
 fn sc_help(_argc: i32, _argv: Vec<String>, cmd_index: &RefCell<Vec<Command>>) {
     println!("NAME        ALIAS      DESCRIPTION");
     for c in cmd_index.borrow().iter() {
-        println!("{:9}   {:5}      {:7}", c.name, c.shortcut, c.desc);
+        println!("{:9}   {:5}      {:7}", c.name, c.alias, c.desc);
     }
 }
 
@@ -94,7 +94,7 @@ fn sc_show(_argc: i32, _argv: Vec<String>, _cmd_index: &RefCell<Vec<Command>>) {
     if let Value::Object(ref shortcuts) = SHORTCUTS {
         println!    ("ALIAS      COMMAND");
         for (alias, val) in shortcuts {
-            println!("{:5}      {}", shortcut, val.as_str().unwrap_or("<Error: Not a string.>"));
+            println!("{:5}      {}", alias, val.as_str().unwrap_or("<Error: Not a string.>"));
         }
     }}
 }
@@ -182,7 +182,7 @@ pub extern "C" fn cmd_shortcut(argc: c_int, argv: *const *const c_char) {
 
     // Iterate commands
     for c in cmd_index.borrow().iter() {
-        if subcommand == c.name || subcommand == c.shortcut {
+        if subcommand == c.name || subcommand == c.alias {
             let cargv = args[1..].to_vec();
             (c.func)(argc - 1, cargv);
             return;
